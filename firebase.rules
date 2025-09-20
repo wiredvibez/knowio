@@ -1,0 +1,61 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{db}/documents {
+    function isAuthed() { return request.auth != null; }
+    function canReadEntity(id) {
+      return isAuthed() && exists(/databases/$(db)/documents/entities/$(id)) && (
+        get(/databases/$(db)/documents/entities/$(id)).data.owner_id == request.auth.uid ||
+        (request.auth.uid in get(/databases/$(db)/documents/entities/$(id)).data.viewer_ids)
+      );
+    }
+
+    match /entities/{id} {
+      allow read: if isAuthed() && (resource.data.owner_id == request.auth.uid || request.auth.uid in resource.data.viewer_ids);
+      allow create: if isAuthed() && request.resource.data.owner_id == request.auth.uid;
+      allow update, delete: if isAuthed() && resource.data.owner_id == request.auth.uid;
+    }
+
+    match /entities/{id}/bits/{bid} {
+      allow read: if isAuthed() && (
+        get(/databases/$(db)/documents/entities/$(id)).data.owner_id == request.auth.uid ||
+        (request.auth.uid in get(/databases/$(db)/documents/entities/$(id)).data.viewer_ids)
+      );
+      allow create: if isAuthed() && request.resource.data.author_id == request.auth.uid;
+      allow update, delete: if isAuthed() && resource.data.author_id == request.auth.uid;
+    }
+
+    match /interactions/{iid} {
+      allow read: if isAuthed() && (
+        resource.data.owner_id == request.auth.uid ||
+        resource.data.entity_refs.any(id, canReadEntity(id))
+      );
+      allow create: if isAuthed() && request.resource.data.owner_id == request.auth.uid &&
+        request.resource.data.entity_refs.all(id, canReadEntity(id));
+      allow update, delete: if isAuthed() && resource.data.owner_id == request.auth.uid;
+    }
+
+    match /{picker=picker_*}/{tagId} {
+      allow read: if true;
+      allow create, update: if isAuthed();
+    }
+
+    match /users/{uid} {
+      allow read, create, update: if isAuthed() && uid == request.auth.uid;
+    }
+
+    match /shares/{sid} {
+      allow create: if isAuthed() && request.resource.data.sender_id == request.auth.uid;
+      allow read, update: if isAuthed() && (
+        resource.data.sender_id == request.auth.uid ||
+        resource.data.recipient_id == request.auth.uid
+      );
+    }
+
+    match /system/{doc} {
+      allow read: if true;
+      allow write: if false;
+    }
+  }
+}
+
+
