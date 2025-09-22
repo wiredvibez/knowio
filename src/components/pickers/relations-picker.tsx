@@ -11,11 +11,15 @@ export function RelationsPicker({
   onChange,
   multiple = true,
   queryOwnerId,
+  excludeIds = [],
+  readonly = false,
 }: {
   value: string[];
   onChange: (ids: string[]) => void;
   multiple?: boolean;
   queryOwnerId?: string;
+  excludeIds?: string[];
+  readonly?: boolean;
 }) {
   const [options, setOptions] = useState<Option[]>([]);
   const coll = useMemo(() => collection(db, "entities"), []);
@@ -25,10 +29,14 @@ export function RelationsPicker({
       ? query(coll, where("owner_id", "==", queryOwnerId), orderBy("created_at", "desc"), limit(50))
       : query(coll, orderBy("created_at", "desc"), limit(50));
     const unsub = onSnapshot(q, (snap) => {
-      setOptions(snap.docs.map((d) => ({ value: d.id, label: (d.data() as any).name ?? d.id })));
+      setOptions(
+        snap.docs
+          .filter((d) => !excludeIds.includes(d.id))
+          .map((d) => ({ value: d.id, label: (d.data() as any).name ?? d.id }))
+      );
     });
     return () => unsub();
-  }, [coll, queryOwnerId]);
+  }, [coll, queryOwnerId, JSON.stringify(excludeIds)]);
 
   if (multiple) {
     return (
@@ -40,6 +48,7 @@ export function RelationsPicker({
         placeholder="בחר קשרים"
         classNamePrefix="rs"
         styles={{ menu: (s) => ({ ...s, zIndex: 50 }) }}
+        isDisabled={readonly}
       />
     );
   }
@@ -53,6 +62,7 @@ export function RelationsPicker({
       placeholder="בחר קשר"
       classNamePrefix="rs"
       styles={{ menu: (s) => ({ ...s, zIndex: 50 }) }}
+      isDisabled={readonly}
     />
   );
 }
