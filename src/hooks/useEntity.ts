@@ -12,14 +12,14 @@ export function useEntity(id?: string) {
     const ref = doc(db, "entities", id);
     const unsub = onSnapshot(ref, (snap) => {
       if (!snap.exists()) return setEntity(null);
-      setEntity({ id: snap.id, ...(snap.data() as any) });
+      setEntity({ id: snap.id, ...(snap.data() as EntityDoc) });
     });
     return () => unsub();
   }, [id]);
 
   async function save(fields: Partial<EntityDoc>) {
     if (!id) return;
-    await updateDoc(doc(db, "entities", id), fields as any);
+    await updateDoc(doc(db, "entities", id), fields as Record<string, unknown>);
   }
 
   return { entity, save };

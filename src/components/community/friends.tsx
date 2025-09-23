@@ -13,11 +13,11 @@ export function FriendsManager() {
   useEffect(() => {
     const ids = [
       ...friends,
-      ...requestsIn.map(r=>r.from),
-      ...requestsOut.map(r=>r.to),
+      ...requestsIn.map((r) => r.from),
+      ...requestsOut.map((r) => r.to),
     ];
     fetchUserNames(ids).then(setNameMap);
-  }, [friends.join(','), JSON.stringify(requestsIn), JSON.stringify(requestsOut)]);
+  }, [friends, requestsIn, requestsOut]);
 
   return (
     <div className="space-y-6">

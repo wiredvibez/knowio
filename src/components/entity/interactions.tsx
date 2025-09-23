@@ -5,7 +5,7 @@ import { addDoc, collection, onSnapshot, orderBy, query, serverTimestamp, where,
 import { InteractionTypePicker } from "@/components/pickers/interaction-type-picker";
 import { EntityPicker } from "@/components/pickers/entity-picker";
 
-type Row = { id: string; type: string; date: any; entity_refs: string[]; notes?: string; interactor_uid: string };
+type Row = { id: string; type: string; date: unknown; entity_refs: string[]; notes?: string; interactor_uid: string };
 
 export function Interactions({ entityId, readonly = false }: { entityId: string; readonly?: boolean }) {
   const [rows, setRows] = useState<Row[]>([]);
@@ -21,11 +21,21 @@ export function Interactions({ entityId, readonly = false }: { entityId: string;
     // Rules require owner-only read; also order by date and limit for efficiency
     const q = query(coll, where("owner_id", "==", uid), orderBy("date", "desc"), limit(100));
     const unsub = onSnapshot(q, (snap) => {
-      const data = snap.docs.map((d) => ({ id: d.id, ...(d.data() as any) })) as Row[];
+      const data = snap.docs.map((d) => {
+        const raw = d.data() as Partial<Row>;
+        return {
+          id: d.id,
+          type: String(raw.type ?? ""),
+          date: raw.date as unknown,
+          entity_refs: Array.isArray(raw.entity_refs) ? (raw.entity_refs as string[]) : [],
+          notes: typeof raw.notes === 'string' ? raw.notes : undefined,
+          interactor_uid: String(raw.interactor_uid ?? ""),
+        } as Row;
+      });
       setRows(data.filter((r) => r.entity_refs?.includes(entityId)));
     });
     return () => unsub();
-  }, [entityId, auth.currentUser?.uid]);
+  }, [entityId]);
 
   async function createInteraction() {
     if (!auth.currentUser || !type) return;
@@ -97,7 +107,15 @@ export function Interactions({ entityId, readonly = false }: { entityId: string;
             <div className="flex items-center justify-between">
               <div className="font-medium">{r.type}</div>
               <div className="text-xs text-muted-foreground">
-                {r.date?.toDate ? r.date.toDate().toLocaleDateString() : ""}
+                {(() => {
+                  type HasToDate = { toDate: () => Date };
+                  const d = r.date as unknown;
+                  const hasToDate = (v: unknown): v is HasToDate => {
+                    return !!v && typeof v === 'object' && 'toDate' in (v as Record<string, unknown>) && typeof (v as HasToDate).toDate === 'function';
+                  };
+                  const asDate = hasToDate(d) ? d.toDate() : d instanceof Date ? d : undefined;
+                  return asDate ? asDate.toLocaleDateString() : "";
+                })()}
               </div>
             </div>
             {r.notes && (

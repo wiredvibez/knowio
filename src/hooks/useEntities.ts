@@ -59,8 +59,8 @@ export function useEntities({ types, filters }: { types: string[]; filters: TagF
       const normalized = merged
         .map((e) => ({ ...e, name: (e.name ?? "").toString() }))
         .sort((a, b) => {
-          const ad = (a.created_at as any)?.toMillis?.() ?? 0;
-          const bd = (b.created_at as any)?.toMillis?.() ?? 0;
+          const ad = (a.created_at as unknown as { toMillis?: () => number })?.toMillis?.() ?? 0;
+          const bd = (b.created_at as unknown as { toMillis?: () => number })?.toMillis?.() ?? 0;
           return bd - ad;
         });
       setRows(normalized);
@@ -194,8 +194,8 @@ export function useEntities({ types, filters }: { types: string[]; filters: TagF
       for (const r of prev) byId[r.id] = r;
       for (const r of normalized) byId[r.id] = r;
       return Object.values(byId).sort((a, b) => {
-        const ad = (a.created_at as any)?.toMillis?.() ?? 0;
-        const bd = (b.created_at as any)?.toMillis?.() ?? 0;
+        const ad = (a.created_at as unknown as { toMillis?: () => number })?.toMillis?.() ?? 0;
+        const bd = (b.created_at as unknown as { toMillis?: () => number })?.toMillis?.() ?? 0;
         return bd - ad;
       });
     });

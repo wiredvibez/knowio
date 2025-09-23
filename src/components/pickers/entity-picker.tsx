@@ -23,7 +23,11 @@ export function EntityPicker({
       ? query(coll, where("owner_id", "==", queryOwnerId), orderBy("created_at", "desc"), limit(50))
       : query(coll, orderBy("created_at", "desc"), limit(50));
     const unsub = onSnapshot(q, (snap) => {
-      setOptions(snap.docs.map((d) => ({ value: d.id, label: (d.data() as any).name ?? d.id })));
+      setOptions(snap.docs.map((d) => {
+        const data = d.data() as { name?: unknown };
+        const label = typeof data.name === 'string' ? data.name : d.id;
+        return { value: d.id, label };
+      }));
     });
     return () => unsub();
   }, [coll, queryOwnerId]);

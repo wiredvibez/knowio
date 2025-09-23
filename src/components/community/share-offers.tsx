@@ -2,26 +2,25 @@
 import { useEffect, useState } from "react";
 import { auth, db } from "@/lib/firebase";
 import { collection, deleteDoc, doc, onSnapshot, query, updateDoc, where } from "firebase/firestore";
-import { fetchUserNames, fetchEntityNames } from "@/lib/names";
+import { fetchUserNames } from "@/lib/names";
+import type { Timestamp } from "firebase/firestore";
 
-type Offer = { id: string; sender_id: string; recipient_id: string; entity_ids: string[]; confirmed: boolean; created_at?: any };
+type Offer = { id: string; sender_id: string; recipient_id: string; entity_ids: string[]; confirmed: boolean; created_at?: Timestamp };
 
 export function ShareOffers() {
   const uid = auth.currentUser?.uid;
   const [offers, setOffers] = useState<Offer[]>([]);
   const [userNames, setUserNames] = useState<Record<string, string>>({});
-  const [entityNames, setEntityNames] = useState<Record<string, string>>({});
+  // entityNames not needed for current UI (we show counts only)
 
   useEffect(() => {
     if (!uid) return;
     const q = query(collection(db, "shares"), where("recipient_id", "==", uid), where("confirmed", "==", false));
     const unsub = onSnapshot(q, (snap) => {
-      const rows = snap.docs.map((d) => ({ id: d.id, ...(d.data() as any) })) as Offer[];
+      const rows = snap.docs.map((d) => ({ ...(d.data() as Omit<Offer, 'id'>), id: d.id })) as Offer[];
       setOffers(rows);
       const senders = rows.map((r) => r.sender_id);
       fetchUserNames(senders).then(setUserNames);
-      const ids = Array.from(new Set(rows.flatMap((r) => r.entity_ids || [])));
-      fetchEntityNames(ids).then(setEntityNames);
     });
     return () => unsub();
   }, [uid]);

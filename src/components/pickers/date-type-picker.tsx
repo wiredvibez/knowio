@@ -2,7 +2,7 @@
 import Select from "react-select/creatable";
 import { useEffect, useMemo, useState } from "react";
 import { auth, db } from "@/lib/firebase";
-import { doc, onSnapshot, setDoc, updateDoc } from "firebase/firestore";
+import { doc, onSnapshot, setDoc } from "firebase/firestore";
 
 type Option = { value: string; label: string };
 

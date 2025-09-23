@@ -1,26 +1,15 @@
 "use client";
 import { useEffect, useState } from "react";
 import { auth, db } from "@/lib/firebase";
-import {
-  addDoc,
-  collection,
-  deleteDoc,
-  doc,
-  getDocs,
-  onSnapshot,
-  query,
-  serverTimestamp,
-  setDoc,
-  updateDoc,
-  where,
-} from "firebase/firestore";
+import { addDoc, collection, deleteDoc, doc, getDocs, onSnapshot, query, serverTimestamp, updateDoc, where } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 
 export function useFriends() {
   const [uid, setUid] = useState<string | undefined>(auth.currentUser?.uid || undefined);
   const [friends, setFriends] = useState<string[]>([]);
-  const [requestsIn, setRequestsIn] = useState<any[]>([]);
-  const [requestsOut, setRequestsOut] = useState<any[]>([]);
+  type FriendRequest = { id: string; from: string; to: string; created_at?: unknown };
+  const [requestsIn, setRequestsIn] = useState<FriendRequest[]>([]);
+  const [requestsOut, setRequestsOut] = useState<FriendRequest[]>([]);
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (u) => setUid(u?.uid || undefined));
@@ -34,8 +23,8 @@ export function useFriends() {
     });
     const rq = query(collection(db, "friend_requests"), where("to", "==", uid));
     const ro = query(collection(db, "friend_requests"), where("from", "==", uid));
-    const unsubIn = onSnapshot(rq, (snap) => setRequestsIn(snap.docs.map((d) => ({ id: d.id, ...(d.data() as any) }))));
-    const unsubOut = onSnapshot(ro, (snap) => setRequestsOut(snap.docs.map((d) => ({ id: d.id, ...(d.data() as any) }))));
+    const unsubIn = onSnapshot(rq, (snap) => setRequestsIn(snap.docs.map((d) => ({ ...(d.data() as Omit<FriendRequest, 'id'>), id: d.id }))));
+    const unsubOut = onSnapshot(ro, (snap) => setRequestsOut(snap.docs.map((d) => ({ ...(d.data() as Omit<FriendRequest, 'id'>), id: d.id }))));
     return () => { unsubUser(); unsubIn(); unsubOut(); };
   }, [uid]);
 
@@ -57,21 +46,21 @@ export function useFriends() {
   async function acceptRequest(id: string, from: string) {
     const me = auth.currentUser?.uid;
     if (!me) return;
-    await updateDoc(doc(db, "users", me), { friends: setUnionField([from]) } as any);
-    await updateDoc(doc(db, "users", from), { friends: setUnionField([me]) } as any);
+    await updateDoc(doc(db, "users", me), { friends: setUnionField([from]) } as Record<string, unknown>);
+    await updateDoc(doc(db, "users", from), { friends: setUnionField([me]) } as Record<string, unknown>);
     await deleteDoc(doc(db, "friend_requests", id));
   }
 
   async function removeFriend(other: string) {
     const me = auth.currentUser?.uid;
     if (!me) return;
-    await updateDoc(doc(db, "users", me), { friends: arrayRemoveField([other]) } as any);
-    await updateDoc(doc(db, "users", other), { friends: arrayRemoveField([me]) } as any);
+    await updateDoc(doc(db, "users", me), { friends: arrayRemoveField([other]) } as Record<string, unknown>);
+    await updateDoc(doc(db, "users", other), { friends: arrayRemoveField([me]) } as Record<string, unknown>);
   }
 
   // helpers to avoid importing FieldValue (TS type friction). Backend will interpret.
-  function setUnionField(values: string[]) { return (window as any).firebaseArrayUnion?.(...values) || values; }
-  function arrayRemoveField(values: string[]) { return (window as any).firebaseArrayRemove?.(...values) || []; }
+  function setUnionField(values: string[]) { return (window as unknown as { firebaseArrayUnion?: (...v: string[]) => unknown }).firebaseArrayUnion?.(...values) || values; }
+  function arrayRemoveField(values: string[]) { return (window as unknown as { firebaseArrayRemove?: (...v: string[]) => unknown }).firebaseArrayRemove?.(...values) || []; }
 
   return { friends, requestsIn, requestsOut, sendRequestBy, acceptRequest, removeFriend };
 }

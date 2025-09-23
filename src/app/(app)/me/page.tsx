@@ -7,7 +7,7 @@ import { useUserDoc } from "@/hooks/useUserDoc";
 import { useState } from "react";
 
 export default function MePage() {
-  const { user, loading, saveNickname } = useUserDoc();
+  const { user, saveNickname } = useUserDoc();
   const [nick, setNick] = useState("");
 
   return (

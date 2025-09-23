@@ -9,6 +9,7 @@ export function TagChips({ category, ids }: { category: "from" | "relationship" 
   const [docs, setDocs] = useState<Record<string, TagDoc>>({});
   const coll = useMemo(() => collection(db, `picker_${category}`), [category]);
 
+  const idsKey = ids.join(',');
   useEffect(() => {
     (async () => {
       if (!ids || ids.length === 0) { setDocs({}); return; }
@@ -17,13 +18,13 @@ export function TagChips({ category, ids }: { category: "from" | "relationship" 
       for (let i = 0; i < ids.length; i += 10) batches.push(ids.slice(i, i + 10));
       const out: Record<string, TagDoc> = {};
       for (const chunk of batches) {
-        const q = query(coll, where(documentId(), 'in', chunk as any));
+        const q = query(coll, where(documentId(), 'in', chunk as string[]));
         const snap = await getDocs(q);
         snap.forEach((d) => { out[d.id] = d.data() as TagDoc; });
       }
       setDocs(out);
     })();
-  }, [coll, JSON.stringify(ids)]);
+  }, [coll, idsKey, ids]);
 
   return (
     <div className="flex flex-wrap gap-1">

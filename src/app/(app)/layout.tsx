@@ -1,17 +1,24 @@
 "use client";
-import { ReactNode } from "react";
+import { ReactNode, Suspense } from "react";
 import { RequireAuth } from "@/components/auth/require-auth";
 import { ToolbarTabs } from "@/components/nav/toolbar-tabs";
 import { usePathname, useSearchParams } from "next/navigation";
 
-export default function AppLayout({ children }: { children: ReactNode }) {
+function TabsContainer() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const hideTabs = pathname?.startsWith("/network") && Boolean(searchParams.get("entity"));
+  if (hideTabs) return null;
+  return <ToolbarTabs />;
+}
+
+export default function AppLayout({ children }: { children: ReactNode }) {
   return (
     <RequireAuth>
       {children}
-      {!hideTabs && <ToolbarTabs />}
+      <Suspense fallback={null}>
+        <TabsContainer />
+      </Suspense>
     </RequireAuth>
   );
 }

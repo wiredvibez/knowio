@@ -2,7 +2,7 @@
 import { Dialog } from "@/components/ui/dialog";
 import { useEffect, useState } from "react";
 import { auth, db } from "@/lib/firebase";
-import { addDoc, collection, onSnapshot, query, serverTimestamp, where } from "firebase/firestore";
+import { addDoc, collection, onSnapshot, serverTimestamp } from "firebase/firestore";
 
 export function ShareDialog({ open, onOpenChange, entityIds }: { open: boolean; onOpenChange: (v: boolean) => void; entityIds: string[] }) {
   const uid = auth.currentUser?.uid;

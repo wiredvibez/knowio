@@ -79,7 +79,7 @@ export function AddEntityDialog({
         </div>
         <div className="space-y-2">
           <label className="text-sm">סוג</label>
-          <select className="h-10 rounded-md border px-3 text-sm" value={type} onChange={(e) => setType(e.target.value as any)}>
+          <select className="h-10 rounded-md border px-3 text-sm" value={type} onChange={(e) => setType(e.target.value as typeof TYPES[number])}>
             {TYPES.map((t) => (
               <option key={t} value={t}>{t}</option>
             ))}

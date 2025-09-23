@@ -35,9 +35,9 @@ export default function LoginPage() {
         await setDoc(ref, { updated_at: serverTimestamp() }, { merge: true });
       }
       router.replace("/network");
-    } catch (err: any) {
+    } catch (err: unknown) {
       // Ignore benign popup errors that are common during dev/hot reloads
-      const code = err?.code as string | undefined;
+      const code = typeof err === 'object' && err && 'code' in err ? (err as { code?: string }).code : undefined;
       if (code === "auth/popup-closed-by-user" || code === "auth/cancelled-popup-request") {
         // no-op
       } else {

@@ -3,8 +3,9 @@ import { useEffect, useMemo, useState } from "react";
 import { auth, db } from "@/lib/firebase";
 import { collection, onSnapshot, query, where } from "firebase/firestore";
 import { fetchUserNames, fetchEntityNames } from "@/lib/names";
+import type { Timestamp } from "firebase/firestore";
 
-type Pack = { id: string; sender_id: string; recipient_id: string; entity_ids: string[]; confirmed: boolean; created_at?: any };
+type Pack = { id: string; sender_id: string; recipient_id: string; entity_ids: string[]; confirmed: boolean; created_at?: Timestamp };
 
 export function SharePacks() {
   const uid = auth.currentUser?.uid;
@@ -13,8 +14,8 @@ export function SharePacks() {
     if (!uid) return;
     const q = query(collection(db, "shares"), where("sender_id", "==", uid));
     const r = query(collection(db, "shares"), where("recipient_id", "==", uid));
-    const unsubQ = onSnapshot(q, (snap) => setPacks((prev) => [...prev.filter((p) => p.sender_id !== uid), ...snap.docs.map((d) => ({ id: d.id, ...(d.data() as any) }))]));
-    const unsubR = onSnapshot(r, (snap) => setPacks((prev) => [...prev.filter((p) => p.recipient_id !== uid), ...snap.docs.map((d) => ({ id: d.id, ...(d.data() as any) }))]));
+    const unsubQ = onSnapshot(q, (snap) => setPacks((prev) => [...prev.filter((p) => p.sender_id !== uid), ...snap.docs.map((d) => ({ ...(d.data() as Omit<Pack, 'id'>), id: d.id }))]));
+    const unsubR = onSnapshot(r, (snap) => setPacks((prev) => [...prev.filter((p) => p.recipient_id !== uid), ...snap.docs.map((d) => ({ ...(d.data() as Omit<Pack, 'id'>), id: d.id }))]));
     return () => { unsubQ(); unsubR(); };
   }, [uid]);
 
@@ -25,12 +26,12 @@ export function SharePacks() {
     return acc;
   }, {});
 
-  const nameIds = useMemo(() => Object.keys(grouped), [packs.length]);
-  const entityIds = useMemo(() => Array.from(new Set(packs.flatMap(p=>p.entity_ids||[]))), [packs.length]);
+  const nameIds = useMemo(() => Object.keys(grouped), [grouped]);
+  const entityIds = useMemo(() => Array.from(new Set(packs.flatMap((p) => p.entity_ids || []))), [packs]);
   const [userNames, setUserNames] = useState<Record<string,string>>({});
   const [entityNames, setEntityNames] = useState<Record<string,string>>({});
-  useEffect(() => { fetchUserNames(nameIds).then(setUserNames); }, [nameIds.join(',')]);
-  useEffect(() => { fetchEntityNames(entityIds).then(setEntityNames); }, [entityIds.join(',')]);
+  useEffect(() => { fetchUserNames(nameIds).then(setUserNames); }, [nameIds]);
+  useEffect(() => { fetchEntityNames(entityIds).then(setEntityNames); }, [entityIds]);
 
   return (
     <div className="space-y-4">

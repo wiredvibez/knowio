@@ -31,7 +31,10 @@ export function TagPicker({
 
   useEffect(() => {
     const unsub = onSnapshot(query(coll, orderBy("usage_count", "desc")), (snap) => {
-      setTags(snap.docs.map((d) => ({ id: d.id, ...(d.data() as any) })));
+      setTags(snap.docs.map((d) => {
+        const data = d.data() as { name: string; color: string; text_color: "light" | "dark"; usage_count: number };
+        return { id: d.id, ...data };
+      }));
     });
     return () => unsub();
   }, [coll]);

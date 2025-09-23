@@ -24,6 +24,7 @@ export function RelationsPicker({
   const [options, setOptions] = useState<Option[]>([]);
   const coll = useMemo(() => collection(db, "entities"), []);
 
+  const excludeKey = excludeIds.join(',');
   useEffect(() => {
     const q = queryOwnerId
       ? query(coll, where("owner_id", "==", queryOwnerId), orderBy("created_at", "desc"), limit(50))
@@ -32,11 +33,15 @@ export function RelationsPicker({
       setOptions(
         snap.docs
           .filter((d) => !excludeIds.includes(d.id))
-          .map((d) => ({ value: d.id, label: (d.data() as any).name ?? d.id }))
+          .map((d) => {
+            const data = d.data() as { name?: unknown };
+            const label = typeof data.name === 'string' ? data.name : d.id;
+            return { value: d.id, label };
+          })
       );
     });
     return () => unsub();
-  }, [coll, queryOwnerId, JSON.stringify(excludeIds)]);
+  }, [coll, queryOwnerId, excludeKey, excludeIds]);
 
   if (multiple) {
     return (
