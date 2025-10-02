@@ -58,7 +58,6 @@ export function AddEntityDialog({
       contact: {},
       owner_id: auth.currentUser.uid,
       viewer_ids: [],
-      is_shared_readonly: false,
       created_at: serverTimestamp(),
       updated_at: serverTimestamp(),
     });

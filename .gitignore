@@ -39,3 +39,29 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# firebase
+.firebase/
+functions/.runtimeconfig.json
+functions/lib/
+firebase-debug.log*
+firestore-debug.log*
+storage-debug.log*
+ui-debug.log*
+
+# editors
+.vscode/
+.idea/
+
+# OS
+Thumbs.db
+desktop.ini
+
+# caches and outputs
+.eslintcache
+**/coverage/
+dist/
+**/node_modules/
+
+# logs (generic)
+*.log

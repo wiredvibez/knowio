@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useState } from "react";
 import { TagPicker } from "@/components/pickers/tag-picker";
+import { CATEGORY_LABELS } from "@/constants/tags";
 import { AddEntityDialog } from "@/components/entity/add-entity-dialog";
 
 export type TagFilters = { from: string[]; relationship: string[]; character: string[]; field: string[] };
@@ -49,11 +50,30 @@ export function NetworkHeader({
         <Badge variant="outline" className="opacity-50">סינון</Badge>
         <Badge variant="outline" className="opacity-50">הסתרה</Badge> */}
         <div className="h-6 w-px bg-border" />
-        {(["from","relationship","character","field"] as const).map((cat) => (
-          <Badge key={cat} variant="outline" className="cursor-pointer" onClick={() => setOpenCat(cat)}>
-            {cat}
-          </Badge>
-        ))}
+        {(["from","relationship","character","field"] as const).map((cat) => {
+          const selected = filters[cat];
+          const has = selected.length > 0;
+          return (
+            <div key={cat} className={`inline-flex items-center gap-1 rounded-full border px-2 py-1 ${has ? "bg-muted" : ""}`}>
+              <span className="text-sm cursor-pointer" onClick={() => setOpenCat(cat)}>{CATEGORY_LABELS[cat]}</span>
+              {has && (
+                <div className="flex items-center gap-1">
+                  {selected.map((t, idx) => (
+                    <span key={t} className="text-xs">
+                      {t}{idx < selected.length - 1 ? " | " : ""}
+                    </span>
+                  ))}
+                  <button
+                    className="text-xs rounded border px-1"
+                    title="הסר את כל המסננים"
+                    onClick={() => onFiltersChange({ ...filters, [cat]: [] } as TagFilters)}
+                  >×</button>
+                </div>
+              )}
+              <button className="text-xs rounded border px-1" title="הוסף" onClick={() => setOpenCat(cat)}>+</button>
+            </div>
+          );
+        })}
       </div>
       <div className="flex items-center gap-2">
         <input

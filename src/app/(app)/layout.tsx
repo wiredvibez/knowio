@@ -3,6 +3,7 @@ import { ReactNode, Suspense } from "react";
 import { RequireAuth } from "@/components/auth/require-auth";
 import { ToolbarTabs } from "@/components/nav/toolbar-tabs";
 import { usePathname, useSearchParams } from "next/navigation";
+import Image from "next/image";
 
 function TabsContainer() {
   const pathname = usePathname();

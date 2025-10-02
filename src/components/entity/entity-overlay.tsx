@@ -11,7 +11,9 @@ import { CATEGORY_LABELS } from "@/constants/tags";
 import { Pencil } from "lucide-react";
 import { Interactions } from "@/components/entity/interactions";
 import { Bits } from "@/components/entity/bits";
-import { auth } from "@/lib/firebase";
+import { auth, db } from "@/lib/firebase";
+import { doc, getDoc } from "firebase/firestore";
+import { useRouter, useSearchParams } from "next/navigation";
 
 export function EntityOverlay({ open, onOpenChange, entityId }: { open: boolean; onOpenChange: (v: boolean) => void; entityId?: string }) {
   const { entity, save } = useEntity(entityId);
@@ -26,6 +28,35 @@ export function EntityOverlay({ open, onOpenChange, entityId }: { open: boolean;
     character: entity?.character ?? [],
     field: entity?.field ?? [],
   }), [entity]);
+
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [relationNames, setRelationNames] = useState<Record<string, string>>({});
+  const [relationsPickerOpen, setRelationsPickerOpen] = useState(false);
+  const [interactionsOpenKey, setInteractionsOpenKey] = useState(0);
+
+  // Load names for related entities for chips (tolerant to permission-denied)
+  useEffect(() => {
+    (async () => {
+      const ids = (entity?.relations ?? []).filter(Boolean) as string[];
+      const missing = ids.filter((id) => !relationNames[id]);
+      if (missing.length === 0) return;
+      const out: Record<string, string> = {};
+      const reads = missing.map(async (id) => {
+        try {
+          const snap = await getDoc(doc(db, "entities", id));
+          if (snap.exists()) {
+            const data = snap.data() as { name?: unknown };
+            out[id] = typeof data.name === 'string' ? data.name : id;
+          }
+        } catch {
+          // ignore permission errors; skip unreabable related entities
+        }
+      });
+      await Promise.allSettled(reads);
+      setRelationNames((prev) => ({ ...prev, ...out }));
+    })();
+  }, [entity?.relations, db]);
 
   // Sync local editable fields when the focused entity changes
   useEffect(() => {
@@ -137,19 +168,58 @@ export function EntityOverlay({ open, onOpenChange, entityId }: { open: boolean;
 
         <div className="mt-6">
           <hr className="my-3" />
-          <div className="text-lg font-semibold mb-2">קשרים</div>
-          <RelationsPicker
-            value={entity.relations ?? []}
-            onChange={(ids) => save({ relations: ids })}
-            excludeIds={[entity.id!]}
-            readonly={readonly}
-          />
+          <div className="flex items-center gap-2 mb-2">
+            <div className="text-lg font-semibold">קשרים</div>
+            {!readonly && (
+              <Button size="sm" variant="outline" onClick={() => setRelationsPickerOpen((v) => !v)}>+</Button>
+            )}
+          </div>
+          {relationsPickerOpen && !readonly && (
+            <div className="mb-2 inline-block max-w-full">
+              <div className="inline-flex items-start gap-2 rounded-lg border p-2 bg-background">
+                <RelationsPicker
+                  value={entity.relations ?? []}
+                  onChange={(ids) => { save({ relations: ids }); setRelationsPickerOpen(false); }}
+                  excludeIds={[entity.id!]}
+                  readonly={readonly}
+                />
+                <button className="text-sm px-2 py-1 border rounded" onClick={() => setRelationsPickerOpen(false)}>×</button>
+              </div>
+            </div>
+          )}
+          <div className="flex flex-wrap gap-1">
+            {(entity.relations ?? []).map((rid) => (
+              <div key={rid} className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-sm cursor-pointer">
+                <span onClick={() => {
+                  const sp = new URLSearchParams(searchParams.toString());
+                  sp.set("entity", rid);
+                  router.replace(`/network?${sp.toString()}`);
+                }}>{relationNames[rid] ?? rid}</span>
+                {!readonly && (
+                  <button
+                    className="text-xs"
+                    title="הסר"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const next = (entity.relations ?? []).filter((x) => x !== rid);
+                      save({ relations: next });
+                    }}
+                  >×</button>
+                )}
+              </div>
+            ))}
+          </div>
         </div>
 
         <div className="mt-6">
           <hr className="my-3" />
-          <div className="text-lg font-semibold mb-2">אינטראקציות</div>
-          <Interactions entityId={entity.id!} readonly={readonly} />
+          <div className="flex items-center gap-2 mb-2">
+            <div className="text-lg font-semibold">אינטראקציות</div>
+            {!readonly && (
+              <Button size="sm" variant="outline" onClick={() => { setRelationsPickerOpen(false); setInteractionsOpenKey((k: number) => k + 1); }}>+</Button>
+            )}
+          </div>
+          <Interactions entityId={entity.id!} readonly={readonly} openKey={interactionsOpenKey} selfId={entity.id!} selfName={name} />
         </div>
 
         <div className="mt-6">

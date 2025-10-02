@@ -28,7 +28,6 @@ export interface EntityDoc {
   relations?: string[];
   owner_id: string;
   viewer_ids?: string[];
-  is_shared_readonly?: boolean;
   catchup_target_days?: number;
   search_blob?: string;
   created_at?: Timestamp;

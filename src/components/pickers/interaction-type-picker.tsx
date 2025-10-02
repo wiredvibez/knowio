@@ -14,7 +14,7 @@ export function InteractionTypePicker({ value, onChange }: { value?: string; onC
   useEffect(() => {
     if (!ref) return;
     const unsub = onSnapshot(ref, (snap) => {
-      const list = (snap.data()?.interaction_types as string[] | undefined) ?? ["call", "meeting", "message", "gift", "other"];
+      const list = (snap.data()?.interaction_types as string[] | undefined) ?? [];
       setOptions(list.map((x) => ({ value: x, label: x })));
     });
     return () => unsub();
