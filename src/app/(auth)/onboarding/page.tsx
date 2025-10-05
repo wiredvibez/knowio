@@ -49,11 +49,11 @@ export default function OnboardingPage() {
       setStep("welcome");
       forcedWelcomeRef.current = true;
     }
-    const curSource = user.discovery?.source ?? "unknown";
-    setSource(curSource as any);
+    const curSource = (user.discovery?.source ?? "unknown") as "social" | "friends" | "search" | "other" | "unknown";
+    setSource(curSource);
     setSourceOther(user.discovery?.otherText ?? "");
     setIntents(user.intents ?? []);
-    setCalendarStatus(user.integrations?.calendar?.status as any);
+    setCalendarStatus(user.integrations?.calendar?.status as ("connected" | "disconnected" | "error" | undefined));
   }, [user]);
 
   const headerName = useMemo(() => displayName || (user?.email?.split("@")[0] ?? ""), [displayName, user?.email]);
@@ -134,7 +134,7 @@ export default function OnboardingPage() {
         alert("חסר מזהה לקוח של Google (NEXT_PUBLIC_GOOGLE_OAUTH_CLIENT_ID)");
         return;
       }
-      const g = (window as any).google;
+      const g = (window as unknown as { google?: { accounts?: { oauth2?: { initCodeClient?: (cfg: { client_id: string; scope: string; ux_mode: "popup"; callback: (resp: { code?: string; error?: string }) => void }) => { requestCode: () => void } } } } }).google;
       if (!g?.accounts?.oauth2?.initCodeClient) {
         alert("טוען את Google... נסו שוב בעוד רגע");
         return;
@@ -214,8 +214,8 @@ export default function OnboardingPage() {
               <div className="space-y-2">
                 <label className="font-medium">איך שמעתם עלינו?</label>
                 <div className="flex flex-wrap gap-2">
-                  {["social","friends","search","other","unknown"].map((v) => (
-                    <button key={v} type="button" onClick={() => setSource(v as any)} className={`px-3 py-1.5 rounded-full border ${source===v?"bg-blue-600 text-white border-blue-600":"bg-white"}`}>
+                  {(["social","friends","search","other","unknown"] as const).map((v) => (
+                    <button key={v} type="button" onClick={() => setSource(v)} className={`px-3 py-1.5 rounded-full border ${source===v?"bg-blue-600 text-white border-blue-600":"bg-white"}`}>
                       {v === "social" ? "🌐 רשתות" : v === "friends" ? "👥 חברים" : v === "search" ? "🔎 חיפוש" : v === "other" ? "✨ אחר" : "🤷 לא זוכר"}
                     </button>
                   ))}
@@ -228,12 +228,12 @@ export default function OnboardingPage() {
               <div className="space-y-2">
                 <label className="font-medium">למה אתם כאן?</label>
                 <div className="flex flex-wrap gap-2">
-                  {[
+                  {([
                     { v: "relationships", l: "💞 לחזק קשרים" },
                     { v: "business", l: "💼 נטוורקינג עסקי" },
                     { v: "fun", l: "🎉 בשביל הכיף" },
                     { v: "other", l: "✨ אחר" },
-                  ].map(({ v, l }) => (
+                  ] as const).map(({ v, l }) => (
                     <IntentChip
                       key={v}
                       value={v}

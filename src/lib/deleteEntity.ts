@@ -1,5 +1,5 @@
 import { auth, db } from "@/lib/firebase";
-import { arrayRemove, collection, deleteDoc, doc, documentId, getDoc, getDocs, increment, query, updateDoc, where, writeBatch } from "firebase/firestore";
+import { arrayRemove, collection, doc, getDoc, getDocs, increment, query, where, writeBatch } from "firebase/firestore";
 
 type DeleteResult = { deleted: number; skippedNotOwner: number; errors: number };
 
@@ -15,7 +15,7 @@ export async function deleteEntities(entityIds: string[]): Promise<DeleteResult>
       const ref = doc(db, "entities", id);
       const snap = await getDoc(ref);
       if (!snap.exists()) { continue; }
-      const data = snap.data() as any;
+      const data = snap.data() as { owner_id?: string; from?: string[]; relationship?: string[]; character?: string[]; field?: string[] };
       if (data.owner_id !== uid) { skippedNotOwner++; continue; }
 
       const b = writeBatch(db);
@@ -25,7 +25,7 @@ export async function deleteEntities(entityIds: string[]): Promise<DeleteResult>
         const ids: string[] = Array.isArray(data?.[cat]) ? data[cat] : [];
         for (const tid of ids) {
           // Use merge set to avoid batch failure if tag doc is missing
-          b.set(doc(collection(db, `picker_${cat}`), tid), { usage_count: increment(-1) } as any, { merge: true });
+          b.set(doc(collection(db, `picker_${cat}`), tid), { usage_count: increment(-1) } as Record<string, unknown>, { merge: true });
         }
       }
 
@@ -37,7 +37,7 @@ export async function deleteEntities(entityIds: string[]): Promise<DeleteResult>
       );
       const relSnap = await getDocs(relQ);
       relSnap.forEach((d) => {
-        const ownerId = (d.data() as any)?.owner_id;
+        const ownerId = (d.data() as { owner_id?: string })?.owner_id;
         if (ownerId === uid) {
           b.update(d.ref, { relations: arrayRemove(id) });
         }
@@ -47,8 +47,8 @@ export async function deleteEntities(entityIds: string[]): Promise<DeleteResult>
       const sharesQ = query(collection(db, "shares"), where("sender_id", "==", uid), where("entity_ids", "array-contains", id));
       const sharesSnap = await getDocs(sharesQ);
       for (const d of sharesSnap.docs) {
-        const arr: string[] = (d.data()?.entity_ids as string[]) || [];
-        if (arr.length <= 1) {
+        const entityIds = (d.data()?.entity_ids as string[]) || [];
+        if (entityIds.length <= 1) {
           b.delete(d.ref);
         } else {
           b.update(d.ref, { entity_ids: arrayRemove(id) });
@@ -66,7 +66,7 @@ export async function deleteEntities(entityIds: string[]): Promise<DeleteResult>
       // 5) Delete bits subcollection (only bits authored by current user per rules)
       const bitsSnap = await getDocs(collection(db, "entities", id, "bits"));
       for (const bit of bitsSnap.docs) {
-        const authorId = (bit.data() as any)?.author_id;
+        const authorId = (bit.data() as { author_id?: string })?.author_id;
         if (authorId === uid) b.delete(bit.ref);
       }
 

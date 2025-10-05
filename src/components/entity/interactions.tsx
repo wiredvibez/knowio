@@ -1,7 +1,7 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { auth, db } from "@/lib/firebase";
-import { addDoc, collection, onSnapshot, orderBy, query, serverTimestamp, where, limit, getDocs, documentId, getDoc, doc } from "firebase/firestore";
+import { addDoc, collection, onSnapshot, orderBy, query, serverTimestamp, where, limit, getDoc, doc } from "firebase/firestore";
 import { Switch } from "@/components/ui/switch";
 import { InteractionTypePicker } from "@/components/pickers/interaction-type-picker";
 import { EntityPicker } from "@/components/pickers/entity-picker";
@@ -72,7 +72,7 @@ export function Interactions({ entityId, readonly = false, selfId, selfName }: {
       );
       setEntityNames((prev) => ({ ...prev, ...out }));
     })();
-  }, [rows, entityId, entityNames]);
+  }, [rows, entityId, entityNames, selfId, selfName]);
 
   return (
     <div className="space-y-4">
@@ -209,7 +209,7 @@ export function NewInteractionForm({ entityId, onCreated, onCancel }: { entityId
         <button
           className="px-3 py-1.5 rounded bg-foreground text-background disabled:opacity-50"
           onClick={createInteraction}
-          disabled={!type || (dateStr && !isPastDateString(dateStr))}
+          disabled={!type || (!!dateStr && !isPastDateString(dateStr))}
         >
           שמור
         </button>

@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable @typescript-eslint/no-explicit-any, @next/next/no-img-element */
 import { Dialog } from "@/components/ui/dialog";
 import { useEffect, useMemo, useState } from "react";
 import { useEntity } from "@/hooks/useEntity";
@@ -62,7 +63,7 @@ export function EntityOverlay({ open, onOpenChange, entityId }: { open: boolean;
       await Promise.allSettled(reads);
       setRelationNames((prev) => ({ ...prev, ...out }));
     })();
-  }, [entity?.relations, db]);
+  }, [entity?.relations, relationNames]);
 
   // Sync local editable fields when the focused entity changes
   useEffect(() => {
@@ -269,7 +270,22 @@ export function EntityOverlay({ open, onOpenChange, entityId }: { open: boolean;
                   <div className="flex items-center justify-between mb-2">
                     <div className="text-sm font-medium">{CATEGORY_LABELS[cat]}</div>
                     {!readonly && (
-                      <Button size="sm" variant="outline" onClick={(event) => { event.stopPropagation(); setOpenCat(cat); }}>+</Button>
+                      <Popover open={openCat === cat} onOpenChange={(v) => { if (v) setOpenCat(cat); else setOpenCat(null); }}>
+                        <PopoverTrigger asChild>
+                          <Button size="sm" variant="outline" onClick={(event) => { event.stopPropagation(); }}>+</Button>
+                        </PopoverTrigger>
+                        <PopoverContent align="end" side="bottom" className="w-[520px] p-0">
+                          <TagPicker
+                            category={cat}
+                            open={openCat === cat}
+                            onOpenChange={(v) => { if (!v) setOpenCat(null); }}
+                            selected={selected[cat as keyof typeof selected] as string[]}
+                            onChange={(next) => { save({ [cat]: next } as Record<string, unknown>); }}
+                            mode="edit"
+                            variant="inline"
+                          />
+                        </PopoverContent>
+                      </Popover>
                     )}
                   </div>
                   <TagChips category={cat} ids={selected[cat as keyof typeof selected] as string[]} />
@@ -278,16 +294,6 @@ export function EntityOverlay({ open, onOpenChange, entityId }: { open: boolean;
             </div>
           </div>
 
-        {!readonly && (
-          <TagPicker
-            category={openCat ?? "from"}
-            open={openCat !== null}
-            onOpenChange={(v) => !v && setOpenCat(null)}
-            selected={openCat ? (selected as Record<string, string[]>)[openCat] : []}
-            onChange={(next) => { if (openCat) save({ [openCat]: next } as Record<string, unknown>); }}
-            mode="edit"
-          />
-        )}
 
         <div className="mt-6">
           <hr className="my-3" />

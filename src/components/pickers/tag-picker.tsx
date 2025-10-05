@@ -17,6 +17,7 @@ export function TagPicker({
   selected,
   onChange,
   mode = "edit",
+  variant = "dialog",
 }: {
   category: "from" | "relationship" | "character" | "field";
   open: boolean;
@@ -24,6 +25,7 @@ export function TagPicker({
   selected: string[];
   onChange: (next: string[]) => void;
   mode?: Mode;
+  variant?: "dialog" | "inline";
 }) {
   const [q, setQ] = useState("");
   const [tags, setTags] = useState<{ id: string; name: string; color: string; text_color: "light" | "dark"; usage_count: number }[]>([]);
@@ -114,47 +116,57 @@ export function TagPicker({
     setQ("");
   }
 
-  // Prevent overlay rendering when closed (fixes blocking UI on initial load)
+  // Prevent rendering when closed
   if (!open) return null;
 
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <div
-        className="fixed inset-0 bg-black/30"
-        onClick={() => onOpenChange(false)}
-      />
-      <div
-        className="fixed inset-x-4 top-20 z-50 mx-auto max-w-2xl rounded-xl bg-background p-4 shadow-lg"
-        tabIndex={0}
-        onKeyDown={(e) => { if (e.key === 'Escape') onOpenChange(false); }}
-      >
-        <div className="flex items-center gap-2">
-          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="חיפוש תגיות" />
-          {mode === "edit" && (
-            <Button onClick={() => q && createTag(q)} variant="secondary">+ {q}</Button>
-          )}
-          <button className="ml-auto text-sm opacity-70" onClick={() => onOpenChange(false)}>✕</button>
-        </div>
-        <div className="mt-3 max-h-[50vh] overflow-auto flex flex-wrap gap-2">
-          {ordered.map((t) => (
-            <Badge
-              key={t.id}
-              onClick={() => toggleTag(t)}
-              className="cursor-pointer"
-              style={{
-                backgroundColor: selected.includes(t.id) ? t.color : undefined,
-                color: selected.includes(t.id) ? (t.text_color === "light" ? "white" : "black") : undefined,
-                borderColor: !selected.includes(t.id) ? t.color : undefined,
-              }}
-              variant={selected.includes(t.id) ? "default" : "outline"}
-            >
-              {t.name}
-            </Badge>
-          ))}
-        </div>
+  const content = (
+    <div
+      className={variant === "dialog" ? "fixed inset-x-4 top-20 z-50 mx-auto max-w-2xl rounded-xl bg-background p-4 shadow-lg" : "w-[520px] max-w-[80vw] bg-background border rounded-md shadow-md p-3"}
+      tabIndex={0}
+      onKeyDown={(e) => { if (e.key === 'Escape') onOpenChange(false); }}
+      onClick={(e) => e.stopPropagation()}
+      onMouseDown={(e) => e.stopPropagation()}
+    >
+      <div className="flex items-center gap-2">
+        <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="חיפוש תגיות" />
+        {mode === "edit" && (
+          <Button onClick={() => q && createTag(q)} variant="secondary">+ {q}</Button>
+        )}
+        <button className="ml-auto text-sm opacity-70" onClick={(e) => { e.stopPropagation(); onOpenChange(false); }}>✕</button>
       </div>
-    </Dialog>
+      <div className="mt-3 max-h-[50vh] overflow-auto flex flex-wrap gap-2">
+        {ordered.map((t) => (
+          <Badge
+            key={t.id}
+            onClick={() => toggleTag(t)}
+            className="cursor-pointer"
+            style={{
+              backgroundColor: selected.includes(t.id) ? t.color : undefined,
+              color: selected.includes(t.id) ? (t.text_color === "light" ? "white" : "black") : undefined,
+              borderColor: !selected.includes(t.id) ? t.color : undefined,
+            }}
+            variant={selected.includes(t.id) ? "default" : "outline"}
+          >
+            {t.name}
+          </Badge>
+        ))}
+      </div>
+    </div>
   );
+
+  if (variant === "dialog") {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <div
+          className="fixed inset-0 bg-black/30"
+          onClick={() => onOpenChange(false)}
+        />
+        {content}
+      </Dialog>
+    );
+  }
+
+  return content;
 }
 
 

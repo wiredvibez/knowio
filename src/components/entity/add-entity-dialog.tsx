@@ -13,6 +13,7 @@ import { normalizePhoneToE164 } from "@/lib/utils";
 import { AddDataDialog } from "@/components/entity/add-data-dialog";
 
 const TYPES = ["person", "organization", "community", "group", "other"] as const;
+type DialogKind = "phone" | "email" | "insta" | "linkedin" | "url" | "address" | "date";
 
 export function AddEntityDialog({
   open,
@@ -30,9 +31,9 @@ export function AddEntityDialog({
   const [openCat, setOpenCat] = useState<null | "from" | "relationship" | "character" | "field">(null);
   const [tags, setTags] = useState<{ from: string[]; relationship: string[]; character: string[]; field: string[] }>({ from: [], relationship: [], character: [], field: [] });
   const [contact, setContact] = useState<NonNullable<EntityDoc["contact"]>>({});
-  const [addresses, setAddresses] = useState<EntityDoc["addresses"]>([]);
-  const [dates, setDates] = useState<EntityDoc["dates"]>([]);
-  const [dialogKind, setDialogKind] = useState<null | "phone" | "email" | "insta" | "linkedin" | "url" | "address" | "date">(null);
+  const [addresses, setAddresses] = useState<NonNullable<EntityDoc["addresses"]>>([]);
+  const [dates, setDates] = useState<{ label: string; date: Date }[]>([]);
+  const [dialogKind, setDialogKind] = useState<null | DialogKind>(null);
 
   if (!open) return null;
 
@@ -103,7 +104,7 @@ export function AddEntityDialog({
           <ContactChips
             contact={contact}
             addresses={addresses}
-            dates={dates as any}
+            dates={dates}
             readonly={false}
             onAddPhone={() => setDialogKind("phone")}
             onAddEmail={() => setDialogKind("email")}
@@ -135,7 +136,7 @@ export function AddEntityDialog({
           <Button onClick={save} disabled={!name.trim() || saving}>שמור</Button>
         </div>
       </div>
-      <TagPicker
+  <TagPicker
         category={openCat ?? "from"}
         open={openCat !== null}
         onOpenChange={(v) => !v && setOpenCat(null)}
@@ -144,7 +145,7 @@ export function AddEntityDialog({
         mode="edit"
       />
       <AddDataDialog
-        kind={(dialogKind ?? "phone") as any}
+        kind={(dialogKind ?? "phone") as DialogKind}
         open={dialogKind !== null}
         onOpenChange={(v) => { if (!v) setDialogKind(null); }}
         onSave={(val) => {
@@ -177,11 +178,11 @@ export function AddEntityDialog({
             next.push({ url });
             setContact((c) => ({ ...(c ?? {}), url: next }));
           } else if (dialogKind === "address") {
-            const { formatted, label, placeId, lat, lng } = (val as any) || {};
+            const { formatted, label, placeId, lat, lng } = (val as { formatted?: string; label?: string; placeId?: string; lat?: number; lng?: number }) || {};
             setAddresses((prev) => ([...prev, { formatted: formatted ?? label ?? "", label: label ?? formatted ?? "", placeId, lat, lng }]));
           } else if (dialogKind === "date") {
             const { label, date } = (val as { label: string; date: Date });
-            setDates((prev) => ([...prev, { label, date: date as any }]));
+            setDates((prev) => ([...prev, { label, date }]));
           }
           setDialogKind(null);
         }}
