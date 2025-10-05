@@ -78,29 +78,47 @@ export function useEntities({ types, filters }: { types: string[]; filters: TagF
       // Shared: cannot combine viewer_ids array-contains with any other array-contains/any; apply tags client-side
       const qShared = query(coll, where("viewer_ids", "array-contains", uid), ...typeConstraint, orderBy("created_at", "desc"), limit(50));
       unsubscribers.push(
-        onSnapshot(qShared, (snap) => {
-          sharedBatch = snap.docs.map((d) => ({ id: d.id, ...(d.data() as EntityDoc) }));
-          lastSharedRef.current = snap.docs[snap.docs.length - 1] ?? null;
-          applyClientFiltersAndSet();
-        })
+        onSnapshot(
+          qShared,
+          (snap) => {
+            sharedBatch = snap.docs.map((d) => ({ id: d.id, ...(d.data() as EntityDoc) }));
+            lastSharedRef.current = snap.docs[snap.docs.length - 1] ?? null;
+            applyClientFiltersAndSet();
+          },
+          (err) => {
+            console.warn("shared entities snapshot error", err.code);
+          }
+        )
       );
     } else if (includeShared) {
       // Owned can include tagConstraint server-side; Shared must not
       const qOwned = query(coll, where("owner_id", "==", uid), ...typeConstraint, ...tagConstraint, orderBy("created_at", "desc"), limit(50));
       const qShared = query(coll, where("viewer_ids", "array-contains", uid), ...typeConstraint, orderBy("created_at", "desc"), limit(50));
       unsubscribers.push(
-        onSnapshot(qOwned, (snap) => {
-          ownedBatch = snap.docs.map((d) => ({ id: d.id, ...(d.data() as EntityDoc) }));
-          lastOwnedRef.current = snap.docs[snap.docs.length - 1] ?? null;
-          applyClientFiltersAndSet();
-        })
+        onSnapshot(
+          qOwned,
+          (snap) => {
+            ownedBatch = snap.docs.map((d) => ({ id: d.id, ...(d.data() as EntityDoc) }));
+            lastOwnedRef.current = snap.docs[snap.docs.length - 1] ?? null;
+            applyClientFiltersAndSet();
+          },
+          (err) => {
+            console.warn("owned entities snapshot error", err.code);
+          }
+        )
       );
       unsubscribers.push(
-        onSnapshot(qShared, (snap) => {
-          sharedBatch = snap.docs.map((d) => ({ id: d.id, ...(d.data() as EntityDoc) }));
-          lastSharedRef.current = snap.docs[snap.docs.length - 1] ?? null;
-          applyClientFiltersAndSet();
-        })
+        onSnapshot(
+          qShared,
+          (snap) => {
+            sharedBatch = snap.docs.map((d) => ({ id: d.id, ...(d.data() as EntityDoc) }));
+            lastSharedRef.current = snap.docs[snap.docs.length - 1] ?? null;
+            applyClientFiltersAndSet();
+          },
+          (err) => {
+            console.warn("shared entities snapshot error", err.code);
+          }
+        )
       );
     }
 

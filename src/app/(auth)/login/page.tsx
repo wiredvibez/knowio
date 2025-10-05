@@ -5,6 +5,8 @@ import { doc, serverTimestamp, setDoc, getDoc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
+import { LoadingOverlay } from "@/components/ui/loading-overlay";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -19,8 +21,28 @@ export default function LoginPage() {
       const res = await signInWithPopup(auth, googleProvider);
       const u = res.user;
       const ref = doc(db, "users", u.uid);
-      const snap = await getDoc(ref);
-      if (!snap.exists()) {
+      try {
+        const snap = await getDoc(ref);
+        if (!snap.exists()) {
+          await setDoc(ref, {
+            display_name: u.displayName ?? "",
+            photo_url: u.photoURL ?? "",
+            email: u.email ?? "",
+            phone_e164: u.phoneNumber ?? "",
+            friends: [],
+            preferences: {},
+            onboarding: { completed: false, step: "welcome" },
+            created_at: serverTimestamp(),
+            updated_at: serverTimestamp(),
+          });
+          router.replace("/onboarding");
+        } else {
+          await setDoc(ref, { updated_at: serverTimestamp() }, { merge: true });
+          const goOnboarding = !(snap.data()?.onboarding?.completed ?? false);
+          router.replace(goOnboarding ? "/onboarding" : "/network");
+        }
+      } catch (firestoreErr: unknown) {
+        // Treat transient Firestore connectivity issues as non-fatal: create/merge locally and proceed
         await setDoc(ref, {
           display_name: u.displayName ?? "",
           photo_url: u.photoURL ?? "",
@@ -28,13 +50,12 @@ export default function LoginPage() {
           phone_e164: u.phoneNumber ?? "",
           friends: [],
           preferences: {},
-          created_at: serverTimestamp(),
+          onboarding: { completed: false, step: "welcome" },
           updated_at: serverTimestamp(),
-        });
-      } else {
-        await setDoc(ref, { updated_at: serverTimestamp() }, { merge: true });
+        }, { merge: true });
+        console.warn("Firestore unavailable during login; proceeding to onboarding", firestoreErr);
+        router.replace("/onboarding");
       }
-      router.replace("/network");
     } catch (err: unknown) {
       // Ignore benign popup errors that are common during dev/hot reloads
       const code = typeof err === 'object' && err && 'code' in err ? (err as { code?: string }).code : undefined;
@@ -59,14 +80,17 @@ export default function LoginPage() {
   }, [router]);
 
   return (
-    <div className="min-h-dvh grid place-items-center p-6">
+    <div className="min-h-dvh grid place-items-center p-6 relative">
       <div className="max-w-sm w-full space-y-6 text-center">
-        <h1 className="text-2xl font-semibold">כניסה</h1>
+        <div className="flex justify-center">
+          <Image src="/peepz-logo-nobg.png" alt="Peepz" width={160} height={80} priority />
+        </div>
         <Button onClick={handleGoogle} className="w-full gap-2" size="lg" disabled={loading}>
           <span className="text-xl">G</span>
           {loading ? "מתחבר..." : "המשך עם Google"}
         </Button>
       </div>
+      <LoadingOverlay show={loading} label="מתחבר..." />
     </div>
   );
 }

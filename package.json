@@ -1,12 +1,14 @@
 {
-  "name": "web",
-  "version": "0.1.0",
+  "name": "peepz",
+  "version": "0.2.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "migrate:issues": "node --experimental-fetch scripts/migrate-issues.mjs",
+    "read:github:issues": "node --experimental-fetch scripts/read-github-issues.mjs"
   },
   "dependencies": {
     "@radix-ui/react-accordion": "^1.2.12",

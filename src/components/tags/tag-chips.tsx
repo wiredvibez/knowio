@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 
 type TagDoc = { name: string; color: string; text_color: "light" | "dark" };
 
-export function TagChips({ category, ids }: { category: "from" | "relationship" | "character" | "field"; ids: string[] }) {
+export function TagChips({ category, ids, nowrap = false, align = "start" }: { category: "from" | "relationship" | "character" | "field"; ids: string[]; nowrap?: boolean; align?: "start" | "end" }) {
   const [docs, setDocs] = useState<Record<string, TagDoc>>({});
   const coll = useMemo(() => collection(db, `picker_${category}`), [category]);
 
@@ -26,15 +26,16 @@ export function TagChips({ category, ids }: { category: "from" | "relationship" 
     })();
   }, [coll, idsKey, ids]);
 
+  // Single-line mode clips at container edge; no fade/mask to avoid visual glitches
   return (
-    <div className="flex flex-wrap gap-1">
+    <div className={nowrap ? (align === 'end' ? "flex justify-end gap-1 overflow-hidden min-w-0 w-full" : "flex gap-1 overflow-hidden min-w-0 w-full") : "flex flex-wrap gap-1"}>
       {ids.map((id) => {
         const t = docs[id];
         const bg = t?.color ?? '#eef';
         const tc = t?.text_color === 'light' ? '#fff' : '#111827';
         const label = t?.name ?? id;
         return (
-          <span key={id} className="text-xs rounded px-1.5 py-0.5" style={{ backgroundColor: bg, color: tc }}>
+          <span key={id} className={nowrap ? "text-xs rounded px-1.5 py-0.5 shrink-0" : "text-xs rounded px-1.5 py-0.5"} style={{ backgroundColor: bg, color: tc }}>
             {label}
           </span>
         );

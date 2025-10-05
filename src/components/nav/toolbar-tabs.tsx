@@ -1,7 +1,9 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { User2, Network as NetworkIcon, Users2 } from "lucide-react";
+import { Network as NetworkIcon, Users2 } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useUserDoc } from "@/hooks/useUserDoc";
 import { cn } from "@/lib/utils";
 
 type Tab = {
@@ -11,7 +13,6 @@ type Tab = {
 };
 
 const TABS: Tab[] = [
-  { href: "/me", label: "אני", icon: User2 },
   { href: "/network", label: "הרשת", icon: NetworkIcon },
   { href: "/community", label: "קהילה", icon: Users2 },
 ];
@@ -21,6 +22,22 @@ export function ToolbarTabs() {
   return (
     <nav className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50">
       <div className="flex items-center gap-2 rounded-full bg-foreground/90 text-background backdrop-blur px-3 py-2 shadow-lg">
+        {/* Profile Tab as avatar */}
+        {(() => {
+          const active = pathname === "/me" || pathname?.startsWith("/me/");
+          return (
+            <Link
+              key="me"
+              href="/me"
+              className={cn(
+                "flex items-center rounded-full px-2 py-1",
+                active ? "bg-background text-foreground" : "hover:bg-background/10"
+              )}
+            >
+              <ProfileAvatar />
+            </Link>
+          );
+        })()}
         {TABS.map((t) => {
           const active = pathname === t.href || pathname?.startsWith(t.href + "/");
           const Icon = t.icon;
@@ -40,6 +57,17 @@ export function ToolbarTabs() {
         })}
       </div>
     </nav>
+  );
+}
+
+function ProfileAvatar() {
+  const { user } = useUserDoc();
+  const url = user?.photo_url;
+  return (
+    <Avatar className="h-7 w-7 border border-background/20">
+      <AvatarImage src={url} alt="me" />
+      <AvatarFallback>אני</AvatarFallback>
+    </Avatar>
   );
 }
 

@@ -1,7 +1,7 @@
 "use client";
 import Select from "react-select";
 import { useEffect, useMemo, useState } from "react";
-import { db } from "@/lib/firebase";
+import { auth, db } from "@/lib/firebase";
 import { collection, limit, onSnapshot, orderBy, query, where } from "firebase/firestore";
 
 type Option = { value: string; label: string };
@@ -26,21 +26,62 @@ export function RelationsPicker({
 
   const excludeKey = excludeIds.join(',');
   useEffect(() => {
-    const q = queryOwnerId
-      ? query(coll, where("owner_id", "==", queryOwnerId), orderBy("created_at", "desc"), limit(50))
-      : query(coll, orderBy("created_at", "desc"), limit(50));
-    const unsub = onSnapshot(q, (snap) => {
-      setOptions(
-        snap.docs
-          .filter((d) => !excludeIds.includes(d.id))
-          .map((d) => {
-            const data = d.data() as { name?: unknown };
-            const label = typeof data.name === 'string' ? data.name : d.id;
-            return { value: d.id, label };
-          })
+    const uid = queryOwnerId ?? auth.currentUser?.uid ?? null;
+    const unsubs: Array<() => void> = [];
+
+    // Collect options from both owned and shared (viewer_ids) to satisfy rules
+    let owned: Option[] = [];
+    let shared: Option[] = [];
+    const update = () => {
+      const byId: Record<string, Option> = Object.create(null);
+      for (const o of owned) byId[o.value] = o;
+      for (const o of shared) byId[o.value] = o;
+      const merged = Object.values(byId).filter((o) => !excludeIds.includes(o.value));
+      setOptions(merged);
+    };
+
+    if (uid) {
+      const qOwned = query(coll, where("owner_id", "==", uid), orderBy("created_at", "desc"), limit(50));
+      unsubs.push(
+        onSnapshot(
+          qOwned,
+          (snap) => {
+            owned = snap.docs.map((d) => {
+              const data = d.data() as { name?: unknown };
+              const label = typeof data.name === 'string' ? data.name : d.id;
+              return { value: d.id, label };
+            });
+            update();
+          },
+          (err) => {
+            console.warn("relations owned snapshot error", err.code);
+          }
+        )
       );
-    });
-    return () => unsub();
+
+      const qShared = query(coll, where("viewer_ids", "array-contains", uid), orderBy("created_at", "desc"), limit(50));
+      unsubs.push(
+        onSnapshot(
+          qShared,
+          (snap) => {
+            shared = snap.docs.map((d) => {
+              const data = d.data() as { name?: unknown };
+              const label = typeof data.name === 'string' ? data.name : d.id;
+              return { value: d.id, label };
+            });
+            update();
+          },
+          (err) => {
+            console.warn("relations shared snapshot error", err.code);
+          }
+        )
+      );
+    } else {
+      // No uid yet; clear options
+      setOptions([]);
+    }
+
+    return () => unsubs.forEach((u) => u());
   }, [coll, queryOwnerId, excludeKey, excludeIds]);
 
   if (multiple) {

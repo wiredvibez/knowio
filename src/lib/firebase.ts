@@ -1,6 +1,7 @@
 import { initializeApp, getApps, type FirebaseApp, type FirebaseOptions } from "firebase/app";
 import { getAuth, GoogleAuthProvider, type Auth } from "firebase/auth";
 import { getFirestore, type Firestore } from "firebase/firestore";
+import { getFunctions, type Functions } from "firebase/functions";
 import { getStorage, type FirebaseStorage } from "firebase/storage";
 
 let app: FirebaseApp | null = null;
@@ -31,5 +32,6 @@ export const auth: Auth = typeof window !== "undefined" ? getAuth(getFirebaseApp
 export const googleProvider = typeof window !== "undefined" ? new GoogleAuthProvider() : (null as unknown as GoogleAuthProvider);
 export const db: Firestore = typeof window !== "undefined" ? getFirestore(getFirebaseApp()) : ({} as Firestore);
 export const storage: FirebaseStorage = typeof window !== "undefined" ? getStorage(getFirebaseApp()) : ({} as FirebaseStorage);
+export const fns: Functions = typeof window !== "undefined" ? getFunctions(getFirebaseApp(), "us-central1") : ({} as Functions);
 
 

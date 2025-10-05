@@ -3,68 +3,18 @@ import { useMemo } from "react";
 import { ColumnDef, flexRender, getCoreRowModel, useReactTable } from "@tanstack/react-table";
 import type { EntityDoc } from "@/types/firestore";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { AnimatedCheckbox } from "@/components/ui/animated-checkbox";
 import { TagChips } from "@/components/tags/tag-chips";
-import { Phone, Mail, Globe, Instagram, Linkedin, MessageCircle } from "lucide-react";
 import { auth } from "@/lib/firebase";
 import { TypeChip } from "@/components/network/type-chip";
+import { ContactIcons } from "@/components/entity/contact-chips";
 
 function SharedChip() {
   return <span className="text-[10px] ms-2 rounded-full border px-2 py-0.5 bg-white text-foreground/80">משותף</span>;
 }
 
-function ContactIcons({ e }: { e: EntityDoc }) {
-  const phones = e.contact?.phone ?? [];
-  const emails = e.contact?.email ?? [];
-  const openWa = (e164: string) => {
-    const num = e164.replace(/^\+/, "");
-    window.open(`https://wa.me/${num}`, "_blank");
-  };
-  const tel = (e164: string) => {
-    window.location.href = `tel:${e164}`;
-  };
-  const mail = (addr: string) => {
-    window.location.href = `mailto:${addr}`;
-  };
-  const go = (url: { url?: string } | string) => {
-    const u = typeof url === 'string' ? url : (url?.url as string);
-    if (!u) return;
-    const href = u.startsWith("http") ? u : `https://${u}`;
-    window.open(href, "_blank");
-  };
-  return (
-    <div className="flex items-center gap-2">
-      {phones.slice(0, 2).map((p, i) => (
-        <div key={`ph${i}`} className="flex items-center gap-1">
-          <button className="p-1 rounded hover:bg-muted" title={p.e164} onClick={() => openWa(p.e164)}>
-            <MessageCircle className="h-4 w-4" />
-          </button>
-          <button className="p-1 rounded hover:bg-muted" title={p.e164} onClick={() => tel(p.e164)}>
-            <Phone className="h-4 w-4" />
-          </button>
-        </div>
-      ))}
-      {emails.slice(0, 2).map((m, i) => (
-        <button key={`em${i}`} className="p-1 rounded hover:bg-muted" title={m.address} onClick={() => mail(m.address)}>
-          <Mail className="h-4 w-4" />
-        </button>
-      ))}
-      {(e.contact?.insta ?? []).slice(0, 1).map((u, i) => (
-        <button key={`ig${i}`} className="p-1 rounded hover:bg-muted" title={u.url} onClick={() => go(u)}>
-          <Instagram className="h-4 w-4" />
-        </button>
-      ))}
-      {(e.contact?.linkedin ?? []).slice(0, 1).map((u, i) => (
-        <button key={`li${i}`} className="p-1 rounded hover:bg-muted" title={u.url} onClick={() => go(u)}>
-          <Linkedin className="h-4 w-4" />
-        </button>
-      ))}
-      {(e.contact?.url ?? []).slice(0, 2).map((u, i) => (
-        <button key={`ur${i}`} className="p-1 rounded hover:bg-muted" title={u.url} onClick={() => go(u)}>
-          <Globe className="h-4 w-4" />
-        </button>
-      ))}
-    </div>
-  );
+function ContactIconsCell({ e }: { e: EntityDoc }) {
+  return <ContactIcons contact={e.contact} />;
 }
 
 export function EntitiesTable({ rows, onOpen, onEndReached, selectedIds, onToggle, onToggleAll }: { rows: (EntityDoc & { id: string })[]; onOpen?: (id: string) => void; onEndReached?: () => void; selectedIds?: Set<string>; onToggle?: (id: string, checked: boolean) => void; onToggleAll?: (checked: boolean) => void }) {
@@ -74,10 +24,10 @@ export function EntitiesTable({ rows, onOpen, onEndReached, selectedIds, onToggl
     {
       id: "select",
       header: () => (
-        <input type="checkbox" checked={allSelected} onChange={(e) => onToggleAll?.(e.currentTarget.checked)} />
+        <AnimatedCheckbox size="xs" checked={allSelected} onCheckedChange={(v) => onToggleAll?.(Boolean(v))} />
       ),
       cell: ({ row }) => (
-        <input type="checkbox" checked={selectedIds?.has(row.original.id) ?? false} onChange={(e) => onToggle?.(row.original.id, e.currentTarget.checked)} onClick={(ev)=>ev.stopPropagation()} />
+        <AnimatedCheckbox size="xs" checked={selectedIds?.has(row.original.id) ?? false} onCheckedChange={(v) => onToggle?.(row.original.id, Boolean(v))} onClick={(ev)=>ev.stopPropagation()} />
       ),
     },
     {
@@ -95,7 +45,7 @@ export function EntitiesTable({ rows, onOpen, onEndReached, selectedIds, onToggl
     { header: "מערכת יחסים", accessorKey: "relationship", cell: ({ getValue }) => <TagChips category="relationship" ids={(getValue<string[]>() ?? []).slice(0,5)} /> },
     { header: "תכונות ואישיות", accessorKey: "character", cell: ({ getValue }) => <TagChips category="character" ids={(getValue<string[]>() ?? []).slice(0,5)} /> },
     { header: "מקצוע, כלים ותוכן", accessorKey: "field", cell: ({ getValue }) => <TagChips category="field" ids={(getValue<string[]>() ?? []).slice(0,5)} /> },
-    { header: "יצירת קשר", id: "contact", cell: ({ row }) => <ContactIcons e={row.original} /> },
+    { header: "יצירת קשר", id: "contact", cell: ({ row }) => <ContactIconsCell e={row.original} /> },
   ], [allSelected, onToggleAll, onToggle, selectedIds, uid]);
 
   const table = useReactTable({
@@ -106,7 +56,7 @@ export function EntitiesTable({ rows, onOpen, onEndReached, selectedIds, onToggl
   });
 
   return (
-    <div className="rounded-lg border overflow-auto" onScroll={(e) => {
+    <div className="rounded-lg border overflow-auto mb-8" onScroll={(e) => {
       const el = e.currentTarget;
       if (el.scrollTop + el.clientHeight >= el.scrollHeight - 24) onEndReached?.();
     }}>

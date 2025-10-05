@@ -7,6 +7,10 @@ import { addDoc, collection, serverTimestamp, writeBatch, doc, increment } from 
 import { useState } from "react";
 import { TagPicker } from "@/components/pickers/tag-picker";
 import { CATEGORY_LABELS } from "@/constants/tags";
+import type { EntityDoc } from "@/types/firestore";
+import { ContactChips } from "@/components/entity/contact-chips";
+import { normalizePhoneToE164 } from "@/lib/utils";
+import { AddDataDialog } from "@/components/entity/add-data-dialog";
 
 const TYPES = ["person", "organization", "community", "group", "other"] as const;
 
@@ -25,6 +29,10 @@ export function AddEntityDialog({
   const [saving, setSaving] = useState(false);
   const [openCat, setOpenCat] = useState<null | "from" | "relationship" | "character" | "field">(null);
   const [tags, setTags] = useState<{ from: string[]; relationship: string[]; character: string[]; field: string[] }>({ from: [], relationship: [], character: [], field: [] });
+  const [contact, setContact] = useState<NonNullable<EntityDoc["contact"]>>({});
+  const [addresses, setAddresses] = useState<EntityDoc["addresses"]>([]);
+  const [dates, setDates] = useState<EntityDoc["dates"]>([]);
+  const [dialogKind, setDialogKind] = useState<null | "phone" | "email" | "insta" | "linkedin" | "url" | "address" | "date">(null);
 
   if (!open) return null;
 
@@ -55,7 +63,9 @@ export function AddEntityDialog({
       character: tags.character,
       field: tags.field,
       relations: [],
-      contact: {},
+      contact,
+      addresses,
+      dates,
       owner_id: auth.currentUser.uid,
       viewer_ids: [],
       created_at: serverTimestamp(),
@@ -63,7 +73,7 @@ export function AddEntityDialog({
     });
     setSaving(false);
     onOpenChange(false);
-    setName(""); setInfo(""); setType("person"); setTags({ from: [], relationship: [], character: [], field: [] });
+    setName(""); setInfo(""); setType("person"); setTags({ from: [], relationship: [], character: [], field: [] }); setContact({}); setAddresses([]); setDates([]);
     onCreated?.(docRef.id);
   }
 
@@ -88,6 +98,23 @@ export function AddEntityDialog({
           <label className="text-sm">מידע</label>
           <Input value={info} onChange={(e) => setInfo(e.target.value)} placeholder="תיאור קצר" />
         </div>
+        <div className="space-y-2">
+          <div className="text-sm font-medium">פרטי קשר ותוספים</div>
+          <ContactChips
+            contact={contact}
+            addresses={addresses}
+            dates={dates as any}
+            readonly={false}
+            onAddPhone={() => setDialogKind("phone")}
+            onAddEmail={() => setDialogKind("email")}
+            onAddInsta={() => setDialogKind("insta")}
+            onAddLinkedin={() => setDialogKind("linkedin")}
+            onAddUrl={() => setDialogKind("url")}
+            onAddAddress={() => setDialogKind("address")}
+            onAddDate={() => setDialogKind("date")}
+          />
+        </div>
+
         <div className="grid gap-3 md:grid-cols-2">
           {(["from","relationship","character","field"] as const).map((cat) => (
             <div key={cat} className="rounded-lg border p-2 cursor-pointer" onClick={() => setOpenCat(cat)}>
@@ -115,6 +142,49 @@ export function AddEntityDialog({
         selected={openCat ? tags[openCat] : []}
         onChange={(next) => openCat && setTags((t) => ({ ...t, [openCat]: next }))}
         mode="edit"
+      />
+      <AddDataDialog
+        kind={(dialogKind ?? "phone") as any}
+        open={dialogKind !== null}
+        onOpenChange={(v) => { if (!v) setDialogKind(null); }}
+        onSave={(val) => {
+          if (dialogKind === "phone") {
+            const v = (val as { e164?: string }).e164 || "";
+            const { e164, error } = normalizePhoneToE164(v);
+            if (error) return alert(error);
+            const next = [...(contact.phone ?? [])];
+            if (e164) next.push({ e164 });
+            setContact((c) => ({ ...(c ?? {}), phone: next }));
+          } else if (dialogKind === "email") {
+            const addr = (val as { address?: string }).address?.trim();
+            if (!addr) return;
+            const next = [...(contact.email ?? [])];
+            next.push({ address: addr });
+            setContact((c) => ({ ...(c ?? {}), email: next }));
+          } else if (dialogKind === "insta") {
+            const { url, header } = val as { url: string; header?: string };
+            const next = [...(contact.insta ?? [])];
+            next.push({ url, header });
+            setContact((c) => ({ ...(c ?? {}), insta: next }));
+          } else if (dialogKind === "linkedin") {
+            const { url } = val as { url: string };
+            const next = [...(contact.linkedin ?? [])];
+            next.push({ url });
+            setContact((c) => ({ ...(c ?? {}), linkedin: next }));
+          } else if (dialogKind === "url") {
+            const { url } = val as { url: string };
+            const next = [...(contact.url ?? [])];
+            next.push({ url });
+            setContact((c) => ({ ...(c ?? {}), url: next }));
+          } else if (dialogKind === "address") {
+            const { formatted, label, placeId, lat, lng } = (val as any) || {};
+            setAddresses((prev) => ([...prev, { formatted: formatted ?? label ?? "", label: label ?? formatted ?? "", placeId, lat, lng }]));
+          } else if (dialogKind === "date") {
+            const { label, date } = (val as { label: string; date: Date });
+            setDates((prev) => ([...prev, { label, date: date as any }]));
+          }
+          setDialogKind(null);
+        }}
       />
     </Dialog>
   );

@@ -1,20 +1,15 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { auth, db } from "@/lib/firebase";
-import { addDoc, collection, onSnapshot, orderBy, query, serverTimestamp, where, limit, getDocs, documentId } from "firebase/firestore";
+import { addDoc, collection, onSnapshot, orderBy, query, serverTimestamp, where, limit, getDocs, documentId, getDoc, doc } from "firebase/firestore";
 import { Switch } from "@/components/ui/switch";
 import { InteractionTypePicker } from "@/components/pickers/interaction-type-picker";
 import { EntityPicker } from "@/components/pickers/entity-picker";
 
 type Row = { id: string; type: string; date: unknown; entity_refs: string[]; notes?: string; interactor_uid: string };
 
-export function Interactions({ entityId, readonly = false, openKey, selfId, selfName }: { entityId: string; readonly?: boolean; openKey?: number; selfId?: string; selfName?: string }) {
+export function Interactions({ entityId, readonly = false, selfId, selfName }: { entityId: string; readonly?: boolean; selfId?: string; selfName?: string }) {
   const [rows, setRows] = useState<Row[]>([]);
-  const [type, setType] = useState<string | undefined>();
-  const [entities, setEntities] = useState<string[]>([]);
-  const [notes, setNotes] = useState("");
-  const [dateStr, setDateStr] = useState<string>("");
-  const [open, setOpen] = useState(false);
   const [entityNames, setEntityNames] = useState<Record<string, string>>({});
 
   useEffect(() => {
@@ -23,20 +18,26 @@ export function Interactions({ entityId, readonly = false, openKey, selfId, self
     const coll = collection(db, "interactions");
     // Rules require owner-only read; also order by date and limit for efficiency
     const q = query(coll, where("owner_id", "==", uid), orderBy("date", "desc"), limit(100));
-    const unsub = onSnapshot(q, (snap) => {
-      const data = snap.docs.map((d) => {
-        const raw = d.data() as Partial<Row>;
-        return {
-          id: d.id,
-          type: String(raw.type ?? ""),
-          date: raw.date as unknown,
-          entity_refs: Array.isArray(raw.entity_refs) ? (raw.entity_refs as string[]) : [],
-          notes: typeof raw.notes === 'string' ? raw.notes : undefined,
-          interactor_uid: String(raw.interactor_uid ?? ""),
-        } as Row;
-      });
-      setRows(data.filter((r) => r.entity_refs?.includes(entityId)));
-    });
+    const unsub = onSnapshot(
+      q,
+      (snap) => {
+        const data = snap.docs.map((d) => {
+          const raw = d.data() as Partial<Row>;
+          return {
+            id: d.id,
+            type: String(raw.type ?? ""),
+            date: raw.date as unknown,
+            entity_refs: Array.isArray(raw.entity_refs) ? (raw.entity_refs as string[]) : [],
+            notes: typeof raw.notes === 'string' ? raw.notes : undefined,
+            interactor_uid: String(raw.interactor_uid ?? ""),
+          } as Row;
+        });
+        setRows(data.filter((r) => r.entity_refs?.includes(entityId)));
+      },
+      (err) => {
+        console.warn("interactions snapshot error", err.code);
+      }
+    );
     return () => unsub();
   }, [entityId]);
 
@@ -54,113 +55,27 @@ export function Interactions({ entityId, readonly = false, openKey, selfId, self
       }
       const ids = Array.from(allIds);
       if (ids.length === 0) return;
-      const batches: string[][] = [];
-      for (let i = 0; i < ids.length; i += 10) batches.push(ids.slice(i, i + 10));
       const out: Record<string, string> = {};
-      for (const chunk of batches) {
-        const snap = await getDocs(query(collection(db, "entities"), where(documentId(), "in", chunk as string[])));
-        snap.forEach((d) => {
-          const data = d.data() as { name?: unknown };
-          out[d.id] = typeof data.name === 'string' ? data.name : d.id;
-        });
-      }
+      // Use per-doc reads to comply with security rules when some entities are not shared
+      await Promise.all(
+        ids.map(async (id) => {
+          try {
+            const d = await getDoc(doc(db, "entities", id));
+            if (d.exists()) {
+              const data = d.data() as { name?: unknown };
+              out[id] = typeof data.name === 'string' ? data.name : id;
+            }
+          } catch {
+            // ignore permission errors for unrelated entities
+          }
+        })
+      );
       setEntityNames((prev) => ({ ...prev, ...out }));
     })();
   }, [rows, entityId, entityNames]);
 
-  // External trigger to open the create form when the key changes
-  const lastKeyRef = useRef<number | undefined>(undefined);
-  useEffect(() => {
-    if (openKey !== undefined && openKey !== lastKeyRef.current) {
-      lastKeyRef.current = openKey;
-      setOpen(true);
-    }
-  }, [openKey]);
-
-  function isPastDateString(value: string): boolean {
-    if (!value) return true; // empty means default to now; server will set timestamp
-    const picked = new Date(value);
-    const today = new Date();
-    picked.setHours(0,0,0,0);
-    today.setHours(0,0,0,0);
-    return picked.getTime() <= today.getTime();
-  }
-
-  async function createInteraction() {
-    if (!auth.currentUser || !type) return;
-    if (!isPastDateString(dateStr)) {
-      alert("תאריך עתידי אינו מותר");
-      return;
-    }
-    const refs = Array.from(new Set([entityId, ...entities].filter(Boolean)));
-    await addDoc(collection(db, "interactions"), {
-      type,
-      entity_refs: refs,
-      date: dateStr ? new Date(dateStr) : serverTimestamp(),
-      location: {},
-      notes,
-      catchup_done: true,
-      interactor_uid: auth.currentUser.uid,
-      owner_id: auth.currentUser.uid,
-      created_at: serverTimestamp(),
-    });
-    setType(undefined);
-    setEntities([]);
-    setNotes("");
-    setDateStr("");
-    setOpen(false);
-  }
-
   return (
     <div className="space-y-4">
-      {!readonly && open && (
-          <div className="rounded-lg border p-3 space-y-3">
-          <div className="grid gap-3 md:grid-cols-4">
-            <div className="space-y-1">
-              <div className="text-xs text-muted-foreground">סוג אינטראקציה</div>
-              <InteractionTypePicker value={type} onChange={setType} />
-            </div>
-              <div className="space-y-1 md:col-span-2">
-              <div className="text-xs text-muted-foreground">ישויות נוספות</div>
-                <EntityPicker value={entities} onChange={setEntities} excludeIds={[entityId]} />
-            </div>
-            <div className="space-y-1">
-              <div className="text-xs text-muted-foreground">תאריך</div>
-              <input
-                type="date"
-                className="border rounded px-2 py-1 h-9 w-full"
-                value={dateStr}
-                  onChange={(e) => setDateStr(e.target.value)}
-                  max={new Date().toISOString().slice(0,10)}
-              />
-            </div>
-          </div>
-            <div className="flex items-center gap-2">
-              <Switch checked disabled />
-              <span className="text-xs text-muted-foreground">בוצע מעקב</span>
-            </div>
-          <div className="space-y-1">
-            <div className="text-xs text-muted-foreground">תיאור</div>
-            <input
-              className="border rounded px-2 py-2 w-full"
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="מה קרה?"
-            />
-          </div>
-            <div className="flex justify-end gap-2">
-              <button className="px-3 py-1.5 rounded border" onClick={() => { setOpen(false); setType(undefined); setEntities([]); setNotes(""); setDateStr(""); }}>בטל</button>
-            <button
-              className="px-3 py-1.5 rounded bg-foreground text-background disabled:opacity-50"
-              onClick={createInteraction}
-                disabled={!type || (dateStr && !isPastDateString(dateStr))}
-            >
-              שמור
-            </button>
-          </div>
-          </div>
-      )}
-
       <div className="space-y-2">
         {(() => {
           // group by date (yyyy-mm-dd)
@@ -209,6 +124,95 @@ export function Interactions({ entityId, readonly = false, openKey, selfId, self
             </div>
           ));
         })()}
+      </div>
+    </div>
+  );
+}
+
+export function NewInteractionForm({ entityId, onCreated, onCancel }: { entityId: string; onCreated?: () => void; onCancel?: () => void }) {
+  const [type, setType] = useState<string | undefined>();
+  const [entities, setEntities] = useState<string[]>([]);
+  const [notes, setNotes] = useState("");
+  const [dateStr, setDateStr] = useState<string>("");
+
+  function isPastDateString(value: string): boolean {
+    if (!value) return true;
+    const picked = new Date(value);
+    const today = new Date();
+    picked.setHours(0,0,0,0);
+    today.setHours(0,0,0,0);
+    return picked.getTime() <= today.getTime();
+  }
+
+  async function createInteraction() {
+    if (!auth.currentUser || !type) return;
+    if (!isPastDateString(dateStr)) {
+      alert("תאריך עתידי אינו מותר");
+      return;
+    }
+    const refs = Array.from(new Set([entityId, ...entities].filter(Boolean)));
+    await addDoc(collection(db, "interactions"), {
+      type,
+      entity_refs: refs,
+      date: dateStr ? new Date(dateStr) : serverTimestamp(),
+      location: {},
+      notes,
+      catchup_done: true,
+      interactor_uid: auth.currentUser.uid,
+      owner_id: auth.currentUser.uid,
+      created_at: serverTimestamp(),
+    });
+    setType(undefined);
+    setEntities([]);
+    setNotes("");
+    setDateStr("");
+    onCreated?.();
+  }
+
+  return (
+    <div className="rounded-lg border p-3 space-y-3">
+      <div className="grid gap-3 md:grid-cols-4">
+        <div className="space-y-1">
+          <div className="text-xs text-muted-foreground">סוג אינטראקציה</div>
+          <InteractionTypePicker value={type} onChange={setType} />
+        </div>
+        <div className="space-y-1 md:col-span-2">
+          <div className="text-xs text-muted-foreground">ישויות נוספות</div>
+          <EntityPicker value={entities} onChange={setEntities} excludeIds={[entityId]} />
+        </div>
+        <div className="space-y-1">
+          <div className="text-xs text-muted-foreground">תאריך</div>
+          <input
+            type="date"
+            className="border rounded px-2 py-1 h-9 w-full"
+            value={dateStr}
+            onChange={(e) => setDateStr(e.target.value)}
+            max={new Date().toISOString().slice(0,10)}
+          />
+        </div>
+      </div>
+      <div className="flex items-center gap-2">
+        <Switch checked disabled />
+        <span className="text-xs text-muted-foreground">בוצע מעקב</span>
+      </div>
+      <div className="space-y-1">
+        <div className="text-xs text-muted-foreground">תיאור</div>
+        <input
+          className="border rounded px-2 py-2 w-full"
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          placeholder="מה קרה?"
+        />
+      </div>
+      <div className="flex justify-end gap-2">
+        <button className="px-3 py-1.5 rounded border" onClick={() => { setType(undefined); setEntities([]); setNotes(""); setDateStr(""); onCancel?.(); }}>בטל</button>
+        <button
+          className="px-3 py-1.5 rounded bg-foreground text-background disabled:opacity-50"
+          onClick={createInteraction}
+          disabled={!type || (dateStr && !isPastDateString(dateStr))}
+        >
+          שמור
+        </button>
       </div>
     </div>
   );

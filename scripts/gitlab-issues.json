@@ -1,0 +1,823 @@
+[
+  {
+    "id": 173805648,
+    "iid": 12,
+    "external_id": "",
+    "state": "opened",
+    "description": "for now allow importing from a csv file, format is as follows:\n*add airtable export format*",
+    "health_status": "",
+    "author": {
+      "id": 27167933,
+      "state": "active",
+      "web_url": "https://gitlab.com/yayatete",
+      "name": "YAIR TETE",
+      "avatar_url": "https://secure.gravatar.com/avatar/90b11098115bd3d4c036d581633884538a8b061d92d87d5b351884dd9890c7a0?s=80&d=identicon",
+      "username": "yayatete"
+    },
+    "milestone": null,
+    "project_id": 74601574,
+    "assignees": [],
+    "updated_at": "2025-09-22T23:34:10.796Z",
+    "closed_at": null,
+    "closed_by": null,
+    "title": "create an import feature",
+    "created_at": "2025-09-22T23:34:10.796Z",
+    "moved_to_id": 0,
+    "labels": [
+      "feature",
+      "prompt"
+    ],
+    "label_details": null,
+    "upvotes": 0,
+    "downvotes": 0,
+    "due_date": null,
+    "web_url": "https://gitlab.com/yayatete/knowio/-/issues/12",
+    "references": {
+      "short": "#12",
+      "relative": "#12",
+      "full": "yayatete/knowio#12"
+    },
+    "time_stats": {
+      "human_time_estimate": "",
+      "human_total_time_spent": "",
+      "time_estimate": 0,
+      "total_time_spent": 0
+    },
+    "confidential": false,
+    "weight": 0,
+    "discussion_locked": false,
+    "issue_type": "issue",
+    "subscribed": false,
+    "user_notes_count": 0,
+    "_links": {
+      "self": "https://gitlab.com/api/v4/projects/74601574/issues/12",
+      "notes": "https://gitlab.com/api/v4/projects/74601574/issues/12/notes",
+      "award_emoji": "https://gitlab.com/api/v4/projects/74601574/issues/12/award_emoji",
+      "project": "https://gitlab.com/api/v4/projects/74601574"
+    },
+    "issue_link_id": 0,
+    "merge_requests_count": 0,
+    "epic_issue_id": 0,
+    "epic": null,
+    "iteration": null,
+    "task_completion_status": {
+      "count": 0,
+      "completed_count": 0
+    },
+    "service_desk_reply_to": "",
+    "assignee": null
+  },
+  {
+    "id": 173805596,
+    "iid": 11,
+    "external_id": "",
+    "state": "opened",
+    "description": "shared entities should have this field true by default. all shared entities should be read-only. in the future i might introduce write permissions to be granted for certain shared entities, or entities meging with shared ownership, etc.\n\nbut right now see that this field is either removed, or defaults to true and make sure that the read-only functionallity is preserved correctly",
+    "health_status": "",
+    "author": {
+      "id": 27167933,
+      "state": "active",
+      "web_url": "https://gitlab.com/yayatete",
+      "name": "YAIR TETE",
+      "avatar_url": "https://secure.gravatar.com/avatar/90b11098115bd3d4c036d581633884538a8b061d92d87d5b351884dd9890c7a0?s=80&d=identicon",
+      "username": "yayatete"
+    },
+    "milestone": null,
+    "project_id": 74601574,
+    "assignees": [],
+    "updated_at": "2025-09-23T08:13:15.929Z",
+    "closed_at": null,
+    "closed_by": null,
+    "title": "what is going on with the is_shared_readonly field?",
+    "created_at": "2025-09-22T23:30:09.475Z",
+    "moved_to_id": 0,
+    "labels": [
+      "Pending Review",
+      "note",
+      "prompt"
+    ],
+    "label_details": null,
+    "upvotes": 0,
+    "downvotes": 0,
+    "due_date": null,
+    "web_url": "https://gitlab.com/yayatete/knowio/-/issues/11",
+    "references": {
+      "short": "#11",
+      "relative": "#11",
+      "full": "yayatete/knowio#11"
+    },
+    "time_stats": {
+      "human_time_estimate": "",
+      "human_total_time_spent": "",
+      "time_estimate": 0,
+      "total_time_spent": 0
+    },
+    "confidential": false,
+    "weight": 0,
+    "discussion_locked": false,
+    "issue_type": "issue",
+    "subscribed": false,
+    "user_notes_count": 1,
+    "_links": {
+      "self": "https://gitlab.com/api/v4/projects/74601574/issues/11",
+      "notes": "https://gitlab.com/api/v4/projects/74601574/issues/11/notes",
+      "award_emoji": "https://gitlab.com/api/v4/projects/74601574/issues/11/award_emoji",
+      "project": "https://gitlab.com/api/v4/projects/74601574"
+    },
+    "issue_link_id": 0,
+    "merge_requests_count": 0,
+    "epic_issue_id": 0,
+    "epic": null,
+    "iteration": null,
+    "task_completion_status": {
+      "count": 0,
+      "completed_count": 0
+    },
+    "service_desk_reply_to": "",
+    "assignee": null
+  },
+  {
+    "id": 173805545,
+    "iid": 10,
+    "external_id": "",
+    "state": "opened",
+    "description": "category names should be in hebrew.\n\nwhen a tag category is filtering, it should show the filtered tags as a list of names, seperated with a line, inside a connected chip. if one if the tags is clicked, it is removed from the filter, at the end show a + to open the picker and add others to filter",
+    "health_status": "",
+    "author": {
+      "id": 27167933,
+      "state": "active",
+      "web_url": "https://gitlab.com/yayatete",
+      "name": "YAIR TETE",
+      "avatar_url": "https://secure.gravatar.com/avatar/90b11098115bd3d4c036d581633884538a8b061d92d87d5b351884dd9890c7a0?s=80&d=identicon",
+      "username": "yayatete"
+    },
+    "milestone": null,
+    "project_id": 74601574,
+    "assignees": [],
+    "updated_at": "2025-09-23T08:19:39.57Z",
+    "closed_at": null,
+    "closed_by": null,
+    "title": "overhaul the filtering UI",
+    "created_at": "2025-09-22T23:27:39.914Z",
+    "moved_to_id": 0,
+    "labels": [
+      "Pending Review",
+      "UI",
+      "prompt"
+    ],
+    "label_details": null,
+    "upvotes": 0,
+    "downvotes": 0,
+    "due_date": null,
+    "web_url": "https://gitlab.com/yayatete/knowio/-/issues/10",
+    "references": {
+      "short": "#10",
+      "relative": "#10",
+      "full": "yayatete/knowio#10"
+    },
+    "time_stats": {
+      "human_time_estimate": "",
+      "human_total_time_spent": "",
+      "time_estimate": 0,
+      "total_time_spent": 0
+    },
+    "confidential": false,
+    "weight": 0,
+    "discussion_locked": false,
+    "issue_type": "issue",
+    "subscribed": false,
+    "user_notes_count": 1,
+    "_links": {
+      "self": "https://gitlab.com/api/v4/projects/74601574/issues/10",
+      "notes": "https://gitlab.com/api/v4/projects/74601574/issues/10/notes",
+      "award_emoji": "https://gitlab.com/api/v4/projects/74601574/issues/10/award_emoji",
+      "project": "https://gitlab.com/api/v4/projects/74601574"
+    },
+    "issue_link_id": 0,
+    "merge_requests_count": 0,
+    "epic_issue_id": 0,
+    "epic": null,
+    "iteration": null,
+    "task_completion_status": {
+      "count": 0,
+      "completed_count": 0
+    },
+    "service_desk_reply_to": "",
+    "assignee": null
+  },
+  {
+    "id": 173805015,
+    "iid": 9,
+    "external_id": "",
+    "state": "opened",
+    "description": "make the top controllers fixed, so you can scroll the table/cards without it disappearing",
+    "health_status": "",
+    "author": {
+      "id": 27167933,
+      "state": "active",
+      "web_url": "https://gitlab.com/yayatete",
+      "name": "YAIR TETE",
+      "avatar_url": "https://secure.gravatar.com/avatar/90b11098115bd3d4c036d581633884538a8b061d92d87d5b351884dd9890c7a0?s=80&d=identicon",
+      "username": "yayatete"
+    },
+    "milestone": null,
+    "project_id": 74601574,
+    "assignees": [],
+    "updated_at": "2025-09-22T23:15:07.755Z",
+    "closed_at": null,
+    "closed_by": null,
+    "title": "ui improvment to network tab",
+    "created_at": "2025-09-22T23:15:07.755Z",
+    "moved_to_id": 0,
+    "labels": [
+      "UI",
+      "prompt"
+    ],
+    "label_details": null,
+    "upvotes": 0,
+    "downvotes": 0,
+    "due_date": null,
+    "web_url": "https://gitlab.com/yayatete/knowio/-/issues/9",
+    "references": {
+      "short": "#9",
+      "relative": "#9",
+      "full": "yayatete/knowio#9"
+    },
+    "time_stats": {
+      "human_time_estimate": "",
+      "human_total_time_spent": "",
+      "time_estimate": 0,
+      "total_time_spent": 0
+    },
+    "confidential": false,
+    "weight": 0,
+    "discussion_locked": false,
+    "issue_type": "issue",
+    "subscribed": false,
+    "user_notes_count": 0,
+    "_links": {
+      "self": "https://gitlab.com/api/v4/projects/74601574/issues/9",
+      "notes": "https://gitlab.com/api/v4/projects/74601574/issues/9/notes",
+      "award_emoji": "https://gitlab.com/api/v4/projects/74601574/issues/9/award_emoji",
+      "project": "https://gitlab.com/api/v4/projects/74601574"
+    },
+    "issue_link_id": 0,
+    "merge_requests_count": 0,
+    "epic_issue_id": 0,
+    "epic": null,
+    "iteration": null,
+    "task_completion_status": {
+      "count": 0,
+      "completed_count": 0
+    },
+    "service_desk_reply_to": "",
+    "assignee": null
+  },
+  {
+    "id": 173804999,
+    "iid": 8,
+    "external_id": "",
+    "state": "opened",
+    "description": "![image](/uploads/1e4002590be4c66f476ba66f1096abe8/image.png){width=216 height=212}",
+    "health_status": "",
+    "author": {
+      "id": 27167933,
+      "state": "active",
+      "web_url": "https://gitlab.com/yayatete",
+      "name": "YAIR TETE",
+      "avatar_url": "https://secure.gravatar.com/avatar/90b11098115bd3d4c036d581633884538a8b061d92d87d5b351884dd9890c7a0?s=80&d=identicon",
+      "username": "yayatete"
+    },
+    "milestone": null,
+    "project_id": 74601574,
+    "assignees": [],
+    "updated_at": "2025-09-22T23:14:18.242Z",
+    "closed_at": null,
+    "closed_by": null,
+    "title": "redesign card view to look more like the photo attached",
+    "created_at": "2025-09-22T23:14:18.242Z",
+    "moved_to_id": 0,
+    "labels": [
+      "UI",
+      "prompt"
+    ],
+    "label_details": null,
+    "upvotes": 0,
+    "downvotes": 0,
+    "due_date": null,
+    "web_url": "https://gitlab.com/yayatete/knowio/-/issues/8",
+    "references": {
+      "short": "#8",
+      "relative": "#8",
+      "full": "yayatete/knowio#8"
+    },
+    "time_stats": {
+      "human_time_estimate": "",
+      "human_total_time_spent": "",
+      "time_estimate": 0,
+      "total_time_spent": 0
+    },
+    "confidential": false,
+    "weight": 0,
+    "discussion_locked": false,
+    "issue_type": "issue",
+    "subscribed": false,
+    "user_notes_count": 0,
+    "_links": {
+      "self": "https://gitlab.com/api/v4/projects/74601574/issues/8",
+      "notes": "https://gitlab.com/api/v4/projects/74601574/issues/8/notes",
+      "award_emoji": "https://gitlab.com/api/v4/projects/74601574/issues/8/award_emoji",
+      "project": "https://gitlab.com/api/v4/projects/74601574"
+    },
+    "issue_link_id": 0,
+    "merge_requests_count": 0,
+    "epic_issue_id": 0,
+    "epic": null,
+    "iteration": null,
+    "task_completion_status": {
+      "count": 0,
+      "completed_count": 0
+    },
+    "service_desk_reply_to": "",
+    "assignee": null
+  },
+  {
+    "id": 173804988,
+    "iid": 7,
+    "external_id": "",
+    "state": "opened",
+    "description": "contact chips with actions built into them should appear after header in the entity page. and in the table view\n\ncontact chips- show type icon at top, them below the action icons.\nfor example for a phone number-\nshow a phone icon, then below in small text the number, and below that 2 small action chips- call and whatsapp.",
+    "health_status": "",
+    "author": {
+      "id": 27167933,
+      "state": "active",
+      "web_url": "https://gitlab.com/yayatete",
+      "name": "YAIR TETE",
+      "avatar_url": "https://secure.gravatar.com/avatar/90b11098115bd3d4c036d581633884538a8b061d92d87d5b351884dd9890c7a0?s=80&d=identicon",
+      "username": "yayatete"
+    },
+    "milestone": null,
+    "project_id": 74601574,
+    "assignees": [],
+    "updated_at": "2025-09-22T23:13:30.883Z",
+    "closed_at": null,
+    "closed_by": null,
+    "title": "contact chips don't appear in table view, or in entity page",
+    "created_at": "2025-09-22T23:13:30.883Z",
+    "moved_to_id": 0,
+    "labels": [
+      "UI",
+      "bug",
+      "prompt"
+    ],
+    "label_details": null,
+    "upvotes": 0,
+    "downvotes": 0,
+    "due_date": null,
+    "web_url": "https://gitlab.com/yayatete/knowio/-/issues/7",
+    "references": {
+      "short": "#7",
+      "relative": "#7",
+      "full": "yayatete/knowio#7"
+    },
+    "time_stats": {
+      "human_time_estimate": "",
+      "human_total_time_spent": "",
+      "time_estimate": 0,
+      "total_time_spent": 0
+    },
+    "confidential": false,
+    "weight": 0,
+    "discussion_locked": false,
+    "issue_type": "issue",
+    "subscribed": false,
+    "user_notes_count": 0,
+    "_links": {
+      "self": "https://gitlab.com/api/v4/projects/74601574/issues/7",
+      "notes": "https://gitlab.com/api/v4/projects/74601574/issues/7/notes",
+      "award_emoji": "https://gitlab.com/api/v4/projects/74601574/issues/7/award_emoji",
+      "project": "https://gitlab.com/api/v4/projects/74601574"
+    },
+    "issue_link_id": 0,
+    "merge_requests_count": 0,
+    "epic_issue_id": 0,
+    "epic": null,
+    "iteration": null,
+    "task_completion_status": {
+      "count": 0,
+      "completed_count": 0
+    },
+    "service_desk_reply_to": "",
+    "assignee": null
+  },
+  {
+    "id": 173804935,
+    "iid": 6,
+    "external_id": "",
+    "state": "opened",
+    "description": "",
+    "health_status": "",
+    "author": {
+      "id": 27167933,
+      "state": "active",
+      "web_url": "https://gitlab.com/yayatete",
+      "name": "YAIR TETE",
+      "avatar_url": "https://secure.gravatar.com/avatar/90b11098115bd3d4c036d581633884538a8b061d92d87d5b351884dd9890c7a0?s=80&d=identicon",
+      "username": "yayatete"
+    },
+    "milestone": null,
+    "project_id": 74601574,
+    "assignees": [],
+    "updated_at": "2025-09-22T23:10:23.324Z",
+    "closed_at": null,
+    "closed_by": null,
+    "title": "move the tag picker blocks (תגיות) to their own section in the entity page (seperate them from the header)",
+    "created_at": "2025-09-22T23:10:23.324Z",
+    "moved_to_id": 0,
+    "labels": [
+      "UI",
+      "prompt"
+    ],
+    "label_details": null,
+    "upvotes": 0,
+    "downvotes": 0,
+    "due_date": null,
+    "web_url": "https://gitlab.com/yayatete/knowio/-/issues/6",
+    "references": {
+      "short": "#6",
+      "relative": "#6",
+      "full": "yayatete/knowio#6"
+    },
+    "time_stats": {
+      "human_time_estimate": "",
+      "human_total_time_spent": "",
+      "time_estimate": 0,
+      "total_time_spent": 0
+    },
+    "confidential": false,
+    "weight": 0,
+    "discussion_locked": false,
+    "issue_type": "issue",
+    "subscribed": false,
+    "user_notes_count": 0,
+    "_links": {
+      "self": "https://gitlab.com/api/v4/projects/74601574/issues/6",
+      "notes": "https://gitlab.com/api/v4/projects/74601574/issues/6/notes",
+      "award_emoji": "https://gitlab.com/api/v4/projects/74601574/issues/6/award_emoji",
+      "project": "https://gitlab.com/api/v4/projects/74601574"
+    },
+    "issue_link_id": 0,
+    "merge_requests_count": 0,
+    "epic_issue_id": 0,
+    "epic": null,
+    "iteration": null,
+    "task_completion_status": {
+      "count": 0,
+      "completed_count": 0
+    },
+    "service_desk_reply_to": "",
+    "assignee": null
+  },
+  {
+    "id": 173804913,
+    "iid": 5,
+    "external_id": "",
+    "state": "opened",
+    "description": "date can only be in the past, disable future dates in the picker, and validate the submission.\n\ntype picker is supposed to use dynamic options pulled from an array in the User doc, with creatable option to create new options (updated in the doc), not the placeholder options.\n\nafter interaction created- the page should show it with no need for a reload- bug.\n\ninteractions section:\n- add a + button next to the header, it opens a popup to record an interaction. in the sections itselef.\n- seperate interactions with thin lines instead of cards. the date should appear and in the same height, after the date text- al line should continue to cross the page and seperate \n- on the left side, if more than 1 entity was involved in the interaction, show the all the mentioned entities names in chips.",
+    "health_status": "",
+    "author": {
+      "id": 27167933,
+      "state": "active",
+      "web_url": "https://gitlab.com/yayatete",
+      "name": "YAIR TETE",
+      "avatar_url": "https://secure.gravatar.com/avatar/90b11098115bd3d4c036d581633884538a8b061d92d87d5b351884dd9890c7a0?s=80&d=identicon",
+      "username": "yayatete"
+    },
+    "milestone": null,
+    "project_id": 74601574,
+    "assignees": [],
+    "updated_at": "2025-09-23T09:22:27.296Z",
+    "closed_at": null,
+    "closed_by": null,
+    "title": "create interaction flow",
+    "created_at": "2025-09-22T23:08:57.234Z",
+    "moved_to_id": 0,
+    "labels": [
+      "Pending Review",
+      "UI",
+      "bug",
+      "prompt"
+    ],
+    "label_details": null,
+    "upvotes": 0,
+    "downvotes": 0,
+    "due_date": null,
+    "web_url": "https://gitlab.com/yayatete/knowio/-/issues/5",
+    "references": {
+      "short": "#5",
+      "relative": "#5",
+      "full": "yayatete/knowio#5"
+    },
+    "time_stats": {
+      "human_time_estimate": "",
+      "human_total_time_spent": "",
+      "time_estimate": 0,
+      "total_time_spent": 0
+    },
+    "confidential": false,
+    "weight": 0,
+    "discussion_locked": false,
+    "issue_type": "issue",
+    "subscribed": false,
+    "user_notes_count": 3,
+    "_links": {
+      "self": "https://gitlab.com/api/v4/projects/74601574/issues/5",
+      "notes": "https://gitlab.com/api/v4/projects/74601574/issues/5/notes",
+      "award_emoji": "https://gitlab.com/api/v4/projects/74601574/issues/5/award_emoji",
+      "project": "https://gitlab.com/api/v4/projects/74601574"
+    },
+    "issue_link_id": 0,
+    "merge_requests_count": 0,
+    "epic_issue_id": 0,
+    "epic": null,
+    "iteration": null,
+    "task_completion_status": {
+      "count": 0,
+      "completed_count": 0
+    },
+    "service_desk_reply_to": "",
+    "assignee": null
+  },
+  {
+    "id": 173804890,
+    "iid": 4,
+    "external_id": "",
+    "state": "opened",
+    "description": "there should be a small + icon to add new relation. once clicked it opens the selection field with all available entities, allows search. once picked, closes the picker, and adds the relation.\n\nrelations are shown below in medium sized chips. once hovered a small x icon appears at the left side of the chip, clicking it removes the relation. clicking anywhere else on the chip redirects to the related entities page.",
+    "health_status": "",
+    "author": {
+      "id": 27167933,
+      "state": "active",
+      "web_url": "https://gitlab.com/yayatete",
+      "name": "YAIR TETE",
+      "avatar_url": "https://secure.gravatar.com/avatar/90b11098115bd3d4c036d581633884538a8b061d92d87d5b351884dd9890c7a0?s=80&d=identicon",
+      "username": "yayatete"
+    },
+    "milestone": null,
+    "project_id": 74601574,
+    "assignees": [],
+    "updated_at": "2025-09-23T08:29:21.528Z",
+    "closed_at": null,
+    "closed_by": null,
+    "title": "overhaul the relations section in the entity page",
+    "created_at": "2025-09-22T23:06:49.747Z",
+    "moved_to_id": 0,
+    "labels": [
+      "Pending Review",
+      "UI",
+      "prompt"
+    ],
+    "label_details": null,
+    "upvotes": 0,
+    "downvotes": 0,
+    "due_date": null,
+    "web_url": "https://gitlab.com/yayatete/knowio/-/issues/4",
+    "references": {
+      "short": "#4",
+      "relative": "#4",
+      "full": "yayatete/knowio#4"
+    },
+    "time_stats": {
+      "human_time_estimate": "",
+      "human_total_time_spent": "",
+      "time_estimate": 0,
+      "total_time_spent": 0
+    },
+    "confidential": false,
+    "weight": 0,
+    "discussion_locked": false,
+    "issue_type": "issue",
+    "subscribed": false,
+    "user_notes_count": 2,
+    "_links": {
+      "self": "https://gitlab.com/api/v4/projects/74601574/issues/4",
+      "notes": "https://gitlab.com/api/v4/projects/74601574/issues/4/notes",
+      "award_emoji": "https://gitlab.com/api/v4/projects/74601574/issues/4/award_emoji",
+      "project": "https://gitlab.com/api/v4/projects/74601574"
+    },
+    "issue_link_id": 0,
+    "merge_requests_count": 0,
+    "epic_issue_id": 0,
+    "epic": null,
+    "iteration": null,
+    "task_completion_status": {
+      "count": 0,
+      "completed_count": 0
+    },
+    "service_desk_reply_to": "",
+    "assignee": null
+  },
+  {
+    "id": 173742762,
+    "iid": 3,
+    "external_id": "",
+    "state": "opened",
+    "description": "community tab:\n- hide empty sections",
+    "health_status": "",
+    "author": {
+      "id": 27167933,
+      "state": "active",
+      "web_url": "https://gitlab.com/yayatete",
+      "name": "YAIR TETE",
+      "avatar_url": "https://secure.gravatar.com/avatar/90b11098115bd3d4c036d581633884538a8b061d92d87d5b351884dd9890c7a0?s=80&d=identicon",
+      "username": "yayatete"
+    },
+    "milestone": null,
+    "project_id": 74601574,
+    "assignees": [],
+    "updated_at": "2025-09-21T15:01:20.5Z",
+    "closed_at": null,
+    "closed_by": null,
+    "title": "UI Optimizations",
+    "created_at": "2025-09-21T15:01:20.5Z",
+    "moved_to_id": 0,
+    "labels": [
+      "UI"
+    ],
+    "label_details": null,
+    "upvotes": 0,
+    "downvotes": 0,
+    "due_date": null,
+    "web_url": "https://gitlab.com/yayatete/knowio/-/issues/3",
+    "references": {
+      "short": "#3",
+      "relative": "#3",
+      "full": "yayatete/knowio#3"
+    },
+    "time_stats": {
+      "human_time_estimate": "",
+      "human_total_time_spent": "",
+      "time_estimate": 0,
+      "total_time_spent": 0
+    },
+    "confidential": false,
+    "weight": 0,
+    "discussion_locked": false,
+    "issue_type": "issue",
+    "subscribed": false,
+    "user_notes_count": 0,
+    "_links": {
+      "self": "https://gitlab.com/api/v4/projects/74601574/issues/3",
+      "notes": "https://gitlab.com/api/v4/projects/74601574/issues/3/notes",
+      "award_emoji": "https://gitlab.com/api/v4/projects/74601574/issues/3/award_emoji",
+      "project": "https://gitlab.com/api/v4/projects/74601574"
+    },
+    "issue_link_id": 0,
+    "merge_requests_count": 0,
+    "epic_issue_id": 0,
+    "epic": null,
+    "iteration": null,
+    "task_completion_status": {
+      "count": 0,
+      "completed_count": 0
+    },
+    "service_desk_reply_to": "",
+    "assignee": null
+  },
+  {
+    "id": 173742631,
+    "iid": 2,
+    "external_id": "",
+    "state": "opened",
+    "description": "",
+    "health_status": "",
+    "author": {
+      "id": 27167933,
+      "state": "active",
+      "web_url": "https://gitlab.com/yayatete",
+      "name": "YAIR TETE",
+      "avatar_url": "https://secure.gravatar.com/avatar/90b11098115bd3d4c036d581633884538a8b061d92d87d5b351884dd9890c7a0?s=80&d=identicon",
+      "username": "yayatete"
+    },
+    "milestone": null,
+    "project_id": 74601574,
+    "assignees": [],
+    "updated_at": "2025-09-21T14:46:58.865Z",
+    "closed_at": null,
+    "closed_by": null,
+    "title": "bug - uploading entity photo does nothing",
+    "created_at": "2025-09-21T14:46:58.865Z",
+    "moved_to_id": 0,
+    "labels": [
+      "bug"
+    ],
+    "label_details": null,
+    "upvotes": 0,
+    "downvotes": 0,
+    "due_date": null,
+    "web_url": "https://gitlab.com/yayatete/knowio/-/issues/2",
+    "references": {
+      "short": "#2",
+      "relative": "#2",
+      "full": "yayatete/knowio#2"
+    },
+    "time_stats": {
+      "human_time_estimate": "",
+      "human_total_time_spent": "",
+      "time_estimate": 0,
+      "total_time_spent": 0
+    },
+    "confidential": false,
+    "weight": 0,
+    "discussion_locked": false,
+    "issue_type": "issue",
+    "subscribed": false,
+    "user_notes_count": 0,
+    "_links": {
+      "self": "https://gitlab.com/api/v4/projects/74601574/issues/2",
+      "notes": "https://gitlab.com/api/v4/projects/74601574/issues/2/notes",
+      "award_emoji": "https://gitlab.com/api/v4/projects/74601574/issues/2/award_emoji",
+      "project": "https://gitlab.com/api/v4/projects/74601574"
+    },
+    "issue_link_id": 0,
+    "merge_requests_count": 0,
+    "epic_issue_id": 0,
+    "epic": null,
+    "iteration": null,
+    "task_completion_status": {
+      "count": 0,
+      "completed_count": 0
+    },
+    "service_desk_reply_to": "",
+    "assignee": null
+  },
+  {
+    "id": 173742081,
+    "iid": 1,
+    "external_id": "",
+    "state": "opened",
+    "description": "- Show entities that are also users / in friends list (badges, quick jumps).\n- Pull profile photos from Instagram/LinkedIn contacts for entity thumbnails (with user consent).\n- What’s New modal since last login (versioned release notes).\n- Full text search (Algolia/Meilisearch).\n- Graph view (1–2 hops).\n- Contacts import, Calendar scan, Instagram OAuth.\n- Error reporting (Sentry or similar).\n\n- draft save for entity half created\n\n\n- circles marketplace - priced sharing\n- pull from linked-in--> creates an entity, can be edited and shit (a planning screen with tags selected (creates new ones?)\n- pull from a webstite by scraping it/AI\n\n\n- share with multiple friends at once\n- add profile pick for users\n- add onboarding after sign-up (name, phone+OTP, some questions, tutorial maybe)",
+    "health_status": "",
+    "author": {
+      "id": 27167933,
+      "state": "active",
+      "web_url": "https://gitlab.com/yayatete",
+      "name": "YAIR TETE",
+      "avatar_url": "https://secure.gravatar.com/avatar/90b11098115bd3d4c036d581633884538a8b061d92d87d5b351884dd9890c7a0?s=80&d=identicon",
+      "username": "yayatete"
+    },
+    "milestone": null,
+    "project_id": 74601574,
+    "assignees": [],
+    "updated_at": "2025-09-21T15:12:59.337Z",
+    "closed_at": null,
+    "closed_by": null,
+    "title": "Future Features",
+    "created_at": "2025-09-21T14:24:08.614Z",
+    "moved_to_id": 0,
+    "labels": [
+      "note"
+    ],
+    "label_details": null,
+    "upvotes": 0,
+    "downvotes": 0,
+    "due_date": null,
+    "web_url": "https://gitlab.com/yayatete/knowio/-/issues/1",
+    "references": {
+      "short": "#1",
+      "relative": "#1",
+      "full": "yayatete/knowio#1"
+    },
+    "time_stats": {
+      "human_time_estimate": "",
+      "human_total_time_spent": "",
+      "time_estimate": 0,
+      "total_time_spent": 0
+    },
+    "confidential": false,
+    "weight": 0,
+    "discussion_locked": false,
+    "issue_type": "issue",
+    "subscribed": false,
+    "user_notes_count": 0,
+    "_links": {
+      "self": "https://gitlab.com/api/v4/projects/74601574/issues/1",
+      "notes": "https://gitlab.com/api/v4/projects/74601574/issues/1/notes",
+      "award_emoji": "https://gitlab.com/api/v4/projects/74601574/issues/1/award_emoji",
+      "project": "https://gitlab.com/api/v4/projects/74601574"
+    },
+    "issue_link_id": 0,
+    "merge_requests_count": 0,
+    "epic_issue_id": 0,
+    "epic": null,
+    "iteration": null,
+    "task_completion_status": {
+      "count": 0,
+      "completed_count": 0
+    },
+    "service_desk_reply_to": "",
+    "assignee": null
+  }
+]
+
+

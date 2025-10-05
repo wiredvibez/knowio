@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
 import { db } from "@/lib/firebase";
-import { collection, onSnapshot, orderBy, query, doc, setDoc, serverTimestamp, writeBatch, increment } from "firebase/firestore";
+import { collection, onSnapshot, orderBy, query, doc, setDoc, serverTimestamp, writeBatch, increment, getDoc } from "firebase/firestore";
 import { Dialog } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -54,15 +54,47 @@ export function TagPicker({
 
   async function createTag(name: string) {
     if (mode === "filter") return; // no create in filter mode
-    const id = name.toLowerCase().trim().replace(/\s+/g, "_");
-    const ref = doc(coll, id);
+    const trimmedName = name.trim();
+    if (!trimmedName) return;
+    const normalizedId = trimmedName.toLowerCase().replace(/\s+/g, "_");
+    const ref = doc(coll, normalizedId);
+
+    // Prefer local snapshot to detect duplicates quickly (by id or case-insensitive name)
+    const existing = tags.find(
+      (t) => t.id === normalizedId || t.name.trim().toLowerCase() === trimmedName.toLowerCase()
+    );
+
+    async function selectExisting(existingId: string) {
+      const alreadySelected = selected.includes(existingId);
+      if (!alreadySelected) {
+        onChange([...selected, existingId]);
+        if (mode === "edit") {
+          const b = writeBatch(db);
+          b.update(doc(coll, existingId), { usage_count: increment(1) });
+          await b.commit();
+        }
+      }
+      setQ("");
+    }
+
+    if (existing) {
+      await selectExisting(existing.id);
+      return;
+    }
+
+    // Fallback to server check to avoid overwriting if snapshot is stale
+    const snap = await getDoc(ref);
+    if (snap.exists()) {
+      await selectExisting(ref.id);
+      return;
+    }
+
+    // Create new tag
     const color = generatePastelHex();
     const text_color = bestTextTone(color);
-    await setDoc(ref, { name, color, text_color, usage_count: 0, created_at: serverTimestamp() });
-    // auto-select newly created in edit mode
-    const next = selected.includes(id) ? selected : [...selected, id];
+    await setDoc(ref, { name: trimmedName, color, text_color, usage_count: 0, created_at: serverTimestamp() });
+    const next = selected.includes(ref.id) ? selected : [...selected, ref.id];
     onChange(next);
-    // and bump usage count by 1
     const b = writeBatch(db);
     b.update(ref, { usage_count: increment(1) });
     await b.commit();

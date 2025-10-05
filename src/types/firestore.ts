@@ -11,6 +11,7 @@ export interface EntityDoc {
   type: EntityType;
   name: string;
   info?: string;
+  photo_url?: string;
   from?: string[];
   relationship?: string[];
   character?: string[];
@@ -23,8 +24,8 @@ export interface EntityDoc {
     url?: ContactURL[];
     other?: ContactOther[];
   };
-  dates?: Record<string, unknown>;
-  address?: { placeId?: string; lat?: number; lng?: number; formatted?: string };
+  addresses?: { formatted: string; placeId?: string; lat?: number; lng?: number; label: string }[];
+  dates?: { label: string; date: Timestamp }[];
   relations?: string[];
   owner_id: string;
   viewer_ids?: string[];
@@ -80,6 +81,13 @@ export interface UserDoc {
   table_prefs?: { column_order?: string[]; hidden_columns?: string[] };
   created_at?: Timestamp;
   updated_at?: Timestamp;
+  // Onboarding flow fields
+  onboarding?: { completed?: boolean; step?: "welcome" | "integrations" };
+  discovery?: { source?: "social" | "friends" | "search" | "other" | "unknown"; otherText?: string };
+  intents?: ("relationships" | "business" | "fun" | "other")[];
+  integrations?: {
+    calendar?: { status?: "connected" | "disconnected" | "error"; connectedAt?: Timestamp; scope?: "readonly" };
+  };
 }
 
 export interface SharePackDoc {

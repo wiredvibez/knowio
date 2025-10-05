@@ -10,10 +10,16 @@ export function useEntity(id?: string) {
   useEffect(() => {
     if (!id) return;
     const ref = doc(db, "entities", id);
-    const unsub = onSnapshot(ref, (snap) => {
-      if (!snap.exists()) return setEntity(null);
-      setEntity({ id: snap.id, ...(snap.data() as EntityDoc) });
-    });
+    const unsub = onSnapshot(
+      ref,
+      (snap) => {
+        if (!snap.exists()) return setEntity(null);
+        setEntity({ id: snap.id, ...(snap.data() as EntityDoc) });
+      },
+      (err) => {
+        console.warn("entity snapshot error", err.code);
+      }
+    );
     return () => unsub();
   }, [id]);
 
