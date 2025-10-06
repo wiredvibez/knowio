@@ -1,11 +1,12 @@
 import { FriendsManager } from "@/components/community/friends";
 import { SharePacks } from "@/components/community/share-packs";
 import { ShareOffers } from "@/components/community/share-offers";
+import { BrandHeader } from "@/components/nav/brand-header";
 
 export default function CommunityPage() {
   return (
     <div className="p-6 space-y-6">
-      <h1 className="text-2xl font-semibold">קהילה</h1>
+      <BrandHeader title="Community" />
       <FriendsManager />
       <ShareOffers />
       <div>

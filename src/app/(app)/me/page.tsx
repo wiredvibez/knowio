@@ -3,21 +3,15 @@ import { signOut } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { Button } from "@/components/ui/button";
 import { useUserDoc } from "@/hooks/useUserDoc";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Link from "next/link";
+import { BrandHeader } from "@/components/nav/brand-header";
 
 export default function MePage() {
   const { user } = useUserDoc();
 
   return (
     <div className="p-6 space-y-6">
-      <div className="flex items-center gap-4">
-        <Avatar className="h-16 w-16">
-          <AvatarImage src={user?.photo_url} alt="avatar" />
-          <AvatarFallback>🙂</AvatarFallback>
-        </Avatar>
-        <h1 className="text-2xl font-semibold">הפרופיל של {user?.display_name || user?.email?.split("@")[0]}</h1>
-      </div>
+      <BrandHeader title="Me" avatarUrl={user?.photo_url} />
       <div className="space-y-4">
         <div className="flex items-center justify-between rounded-lg border p-3">
           <div>

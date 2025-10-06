@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 export default function OnboardingCallback() {
   const params = useSearchParams();
   const router = useRouter();
-  const [status, setStatus] = useState<"pending" | "ok" | "error">("pending");
+  const [, setStatus] = useState<"pending" | "ok" | "error">("pending");
   const [message, setMessage] = useState<string>("");
 
   useEffect(() => {

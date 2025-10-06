@@ -1,6 +1,6 @@
 "use client";
 import { useMemo, useState } from "react";
-import { Dialog } from "@/components/ui/dialog";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { AddressPicker } from "@/components/entity/address-picker";
@@ -80,7 +80,7 @@ export function AddDataDialog({
       }
       onOpenChange(false);
       reset();
-    } catch (e) {
+    } catch {
       setError("שגיאה. נסו שוב");
     } finally {
       setBusy(false);
@@ -91,8 +91,7 @@ export function AddDataDialog({
 
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!v) reset(); onOpenChange(v); }}>
-      <div className="fixed inset-0 bg-black/30" onClick={() => onOpenChange(false)} />
-      <div className="fixed inset-x-4 top-28 z-50 mx-auto max-w-md rounded-xl bg-background p-4 shadow-lg space-y-3">
+      <DialogContent className="space-y-3 sm:max-w-md">
         {kind === "phone" && (
           <div className="space-y-2">
             <div className="text-sm">מספר טלפון</div>
@@ -155,7 +154,7 @@ export function AddDataDialog({
           <Button variant="secondary" onClick={() => onOpenChange(false)} disabled={busy}>בטל</Button>
           <Button onClick={save} disabled={busy}>שמור</Button>
         </div>
-      </div>
+      </DialogContent>
     </Dialog>
   );
 }

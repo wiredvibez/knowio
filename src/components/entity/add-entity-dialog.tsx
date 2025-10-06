@@ -1,16 +1,18 @@
 "use client";
-import { Dialog } from "@/components/ui/dialog";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { db, auth } from "@/lib/firebase";
 import { addDoc, collection, serverTimestamp, writeBatch, doc, increment } from "firebase/firestore";
 import { useState } from "react";
 import { TagPicker } from "@/components/pickers/tag-picker";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { CATEGORY_LABELS } from "@/constants/tags";
 import type { EntityDoc } from "@/types/firestore";
 import { ContactChips } from "@/components/entity/contact-chips";
 import { normalizePhoneToE164 } from "@/lib/utils";
-import { AddDataDialog } from "@/components/entity/add-data-dialog";
+import { AddDataPopover } from "@/components/entity/add-data-popover";
+import { Plus } from "lucide-react";
 
 const TYPES = ["person", "organization", "community", "group", "other"] as const;
 type DialogKind = "phone" | "email" | "insta" | "linkedin" | "url" | "address" | "date";
@@ -80,8 +82,7 @@ export function AddEntityDialog({
 
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!v) cancel(); else onOpenChange(v); }}>
-      <div className="fixed inset-0 bg-black/30" onClick={cancel} />
-      <div className="fixed inset-x-4 top-20 z-50 mx-auto max-w-2xl rounded-xl bg-background p-4 shadow-lg space-y-3">
+      <DialogContent className="space-y-3 sm:max-w-2xl">
         <h2 className="text-lg font-semibold">הנה מוסיפים</h2>
         <div className="space-y-2">
           <label className="text-sm">שם (חובה)</label>
@@ -106,14 +107,57 @@ export function AddEntityDialog({
             addresses={addresses}
             dates={dates}
             readonly={false}
-            onAddPhone={() => setDialogKind("phone")}
-            onAddEmail={() => setDialogKind("email")}
-            onAddInsta={() => setDialogKind("insta")}
-            onAddLinkedin={() => setDialogKind("linkedin")}
-            onAddUrl={() => setDialogKind("url")}
-            onAddAddress={() => setDialogKind("address")}
-            onAddDate={() => setDialogKind("date")}
           />
+          <div className="flex flex-wrap gap-2">
+            <AddDataPopover kind="phone" trigger={<button className="inline-flex items-center gap-1 rounded-full border border-dashed px-2 py-1 text-xs hover:bg-emerald-50"><Plus className="h-3 w-3" /> טלפון</button>}
+              onSave={(val) => {
+                const v = (val as { e164?: string }).e164 || "";
+                const { e164, error } = normalizePhoneToE164(v);
+                if (error) return alert(error);
+                const next = [...(contact.phone ?? [])];
+                if (e164) next.push({ e164 });
+                setContact((c) => ({ ...(c ?? {}), phone: next }));
+              }} />
+            <AddDataPopover kind="email" trigger={<button className="inline-flex items-center gap-1 rounded-full border border-dashed px-2 py-1 text-xs hover:bg-blue-50"><Plus className="h-3 w-3" /> אימייל</button>}
+              onSave={(val) => {
+                const addr = (val as { address?: string }).address?.trim();
+                if (!addr) return;
+                const next = [...(contact.email ?? [])];
+                next.push({ address: addr });
+                setContact((c) => ({ ...(c ?? {}), email: next }));
+              }} />
+            <AddDataPopover kind="insta" trigger={<button className="inline-flex items-center gap-1 rounded-full border border-dashed px-2 py-1 text-xs hover:bg-pink-50"><Plus className="h-3 w-3" /> אינסטגרם</button>}
+              onSave={(val) => {
+                const { url, header } = val as { url: string; header?: string };
+                const next = [...(contact.insta ?? [])];
+                next.push({ url, header });
+                setContact((c) => ({ ...(c ?? {}), insta: next }));
+              }} />
+            <AddDataPopover kind="linkedin" trigger={<button className="inline-flex items-center gap-1 rounded-full border border-dashed px-2 py-1 text-xs hover:bg-sky-50"><Plus className="h-3 w-3" /> לינקדאין</button>}
+              onSave={(val) => {
+                const { url } = val as { url: string };
+                const next = [...(contact.linkedin ?? [])];
+                next.push({ url });
+                setContact((c) => ({ ...(c ?? {}), linkedin: next }));
+              }} />
+            <AddDataPopover kind="url" trigger={<button className="inline-flex items-center gap-1 rounded-full border border-dashed px-2 py-1 text-xs hover:bg-purple-50"><Plus className="h-3 w-3" /> קישור</button>}
+              onSave={(val) => {
+                const { url } = val as { url: string };
+                const next = [...(contact.url ?? [])];
+                next.push({ url });
+                setContact((c) => ({ ...(c ?? {}), url: next }));
+              }} />
+            <AddDataPopover kind="address" trigger={<button className="inline-flex items-center gap-1 rounded-full border border-dashed px-2 py-1 text-xs hover:bg-indigo-50"><Plus className="h-3 w-3" /> כתובת</button>}
+              onSave={(v: unknown) => {
+                const { formatted, label, placeId, lat, lng } = (v as { formatted?: string; label?: string; placeId?: string; lat?: number; lng?: number }) || {};
+                setAddresses((prev) => ([...prev, { formatted: formatted ?? label ?? "", label: label ?? formatted ?? "", placeId, lat, lng }]));
+              }} />
+            <AddDataPopover kind="date" trigger={<button className="inline-flex items-center gap-1 rounded-full border border-dashed px-2 py-1 text-xs hover:bg-amber-50"><Plus className="h-3 w-3" /> תאריך חדש</button>}
+              onSave={(v: unknown) => {
+                const { label, date } = v as { label: string; date: Date };
+                setDates((prev) => ([...prev, { label, date }]));
+              }} />
+          </div>
         </div>
 
         <div className="grid gap-3 md:grid-cols-2">
@@ -121,7 +165,22 @@ export function AddEntityDialog({
             <div key={cat} className="rounded-lg border p-2 cursor-pointer" onClick={() => setOpenCat(cat)}>
               <div className="flex items-center justify-between mb-2">
                 <div className="text-sm font-medium">{CATEGORY_LABELS[cat]}</div>
-                <Button size="sm" variant="outline" onClick={() => setOpenCat(cat)} onMouseDown={(e) => e.stopPropagation()}>+</Button>
+                <Popover open={openCat === cat} onOpenChange={(v) => { if (v) setOpenCat(cat); else setOpenCat(null); }}>
+                  <PopoverTrigger asChild>
+                    <Button size="sm" variant="outline" onClick={(event) => { event.stopPropagation(); }}>+</Button>
+                  </PopoverTrigger>
+                  <PopoverContent align="end" side="bottom" className="w-[520px] max-w-[calc(100vw-1rem)] p-0">
+                    <TagPicker
+                      category={cat}
+                      open={openCat === cat}
+                      onOpenChange={(v) => { if (!v) setOpenCat(null); }}
+                      selected={tags[cat]}
+                      onChange={(next) => setTags((t) => ({ ...t, [cat]: next }))}
+                      mode="edit"
+                      variant="inline"
+                    />
+                  </PopoverContent>
+                </Popover>
               </div>
               <div className="flex flex-wrap gap-1">
                 {tags[cat].map((t) => (
@@ -135,58 +194,9 @@ export function AddEntityDialog({
           <Button variant="secondary" onClick={cancel}>בטל</Button>
           <Button onClick={save} disabled={!name.trim() || saving}>שמור</Button>
         </div>
-      </div>
-  <TagPicker
-        category={openCat ?? "from"}
-        open={openCat !== null}
-        onOpenChange={(v) => !v && setOpenCat(null)}
-        selected={openCat ? tags[openCat] : []}
-        onChange={(next) => openCat && setTags((t) => ({ ...t, [openCat]: next }))}
-        mode="edit"
-      />
-      <AddDataDialog
-        kind={(dialogKind ?? "phone") as DialogKind}
-        open={dialogKind !== null}
-        onOpenChange={(v) => { if (!v) setDialogKind(null); }}
-        onSave={(val) => {
-          if (dialogKind === "phone") {
-            const v = (val as { e164?: string }).e164 || "";
-            const { e164, error } = normalizePhoneToE164(v);
-            if (error) return alert(error);
-            const next = [...(contact.phone ?? [])];
-            if (e164) next.push({ e164 });
-            setContact((c) => ({ ...(c ?? {}), phone: next }));
-          } else if (dialogKind === "email") {
-            const addr = (val as { address?: string }).address?.trim();
-            if (!addr) return;
-            const next = [...(contact.email ?? [])];
-            next.push({ address: addr });
-            setContact((c) => ({ ...(c ?? {}), email: next }));
-          } else if (dialogKind === "insta") {
-            const { url, header } = val as { url: string; header?: string };
-            const next = [...(contact.insta ?? [])];
-            next.push({ url, header });
-            setContact((c) => ({ ...(c ?? {}), insta: next }));
-          } else if (dialogKind === "linkedin") {
-            const { url } = val as { url: string };
-            const next = [...(contact.linkedin ?? [])];
-            next.push({ url });
-            setContact((c) => ({ ...(c ?? {}), linkedin: next }));
-          } else if (dialogKind === "url") {
-            const { url } = val as { url: string };
-            const next = [...(contact.url ?? [])];
-            next.push({ url });
-            setContact((c) => ({ ...(c ?? {}), url: next }));
-          } else if (dialogKind === "address") {
-            const { formatted, label, placeId, lat, lng } = (val as { formatted?: string; label?: string; placeId?: string; lat?: number; lng?: number }) || {};
-            setAddresses((prev) => ([...prev, { formatted: formatted ?? label ?? "", label: label ?? formatted ?? "", placeId, lat, lng }]));
-          } else if (dialogKind === "date") {
-            const { label, date } = (val as { label: string; date: Date });
-            setDates((prev) => ([...prev, { label, date }]));
-          }
-          setDialogKind(null);
-        }}
-      />
+      </DialogContent>
+      
+      
     </Dialog>
   );
 }

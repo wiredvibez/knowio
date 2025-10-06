@@ -1,8 +1,7 @@
 "use client";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { auth, db, storage, fns } from "@/lib/firebase";
+import { auth, db, fns } from "@/lib/firebase";
 import { doc, serverTimestamp, updateDoc } from "firebase/firestore";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { useRouter } from "next/navigation";
 import { useUserDoc } from "@/hooks/useUserDoc";
 import { Button } from "@/components/ui/button";
@@ -31,10 +30,10 @@ export default function OnboardingPage() {
   const [source, setSource] = useState<"social" | "friends" | "search" | "other" | "unknown">("unknown");
   const [sourceOther, setSourceOther] = useState("");
   const [intents, setIntents] = useState<string[]>([]);
-  const [photoFile, setPhotoFile] = useState<File | null>(null);
-  const [photoUploading, setPhotoUploading] = useState(false);
-  const [photoUrl, setPhotoUrl] = useState<string>("");
-  const [photoError, setPhotoError] = useState<string | null>(null);
+  const [, setPhotoFile] = useState<File | null>(null);
+  const [, setPhotoUploading] = useState(false);
+  const [, setPhotoUrl] = useState<string>("");
+  const [, setPhotoError] = useState<string | null>(null);
   const [step, setStep] = useState<"welcome" | "integrations">("welcome");
   const [phoneError, setPhoneError] = useState<string | null>(null);
   const [oauthBusy, setOauthBusy] = useState(false);
@@ -93,21 +92,7 @@ export default function OnboardingPage() {
     setStep("integrations");
   }
 
-  async function uploadPhoto() {
-    if (!photoFile || !auth.currentUser) return;
-    setPhotoUploading(true);
-    setPhotoError(null);
-    try {
-      const path = `users/${auth.currentUser.uid}/profile/photo.jpg`;
-      const r = ref(storage, path);
-      await uploadBytes(r, photoFile, { contentType: photoFile.type || "image/jpeg" });
-      const url = await getDownloadURL(r);
-      setPhotoUrl(url);
-      await savePartial({ photo_url: url });
-    } finally {
-      setPhotoUploading(false);
-    }
-  }
+  // uploadPhoto removed (unused)
 
   async function completeOnboarding() {
     await savePartial({ onboarding: { completed: true, step: "integrations" } });

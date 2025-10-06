@@ -1,5 +1,5 @@
 "use client";
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { ColumnDef, flexRender, getCoreRowModel, useReactTable } from "@tanstack/react-table";
 import type { EntityDoc } from "@/types/firestore";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -17,17 +17,17 @@ function ContactIconsCell({ e }: { e: EntityDoc }) {
   return <ContactIcons contact={e.contact} />;
 }
 
-export function EntitiesTable({ rows, onOpen, onEndReached, selectedIds, onToggle, onToggleAll }: { rows: (EntityDoc & { id: string })[]; onOpen?: (id: string) => void; onEndReached?: () => void; selectedIds?: Set<string>; onToggle?: (id: string, checked: boolean) => void; onToggleAll?: (checked: boolean) => void }) {
+export function EntitiesTable({ rows, onOpen, onEndReached, loadingMore, selectedIds, onToggle, onToggleAll }: { rows: (EntityDoc & { id: string })[]; onOpen?: (id: string) => void; onEndReached?: () => void; loadingMore?: boolean; selectedIds?: Set<string>; onToggle?: (id: string, checked: boolean) => void; onToggleAll?: (checked: boolean) => void }) {
   const allSelected = selectedIds ? rows.length > 0 && rows.every(r => selectedIds.has(r.id)) : false;
   const uid = auth.currentUser?.uid;
   const columns = useMemo<ColumnDef<EntityDoc & { id: string }>[]>(() => [
     {
       id: "select",
       header: () => (
-        <AnimatedCheckbox size="xs" checked={allSelected} onCheckedChange={(v) => onToggleAll?.(Boolean(v))} />
+        <AnimatedCheckbox size="sm" checked={allSelected} onCheckedChange={(v) => onToggleAll?.(Boolean(v))} />
       ),
       cell: ({ row }) => (
-        <AnimatedCheckbox size="xs" checked={selectedIds?.has(row.original.id) ?? false} onCheckedChange={(v) => onToggle?.(row.original.id, Boolean(v))} onClick={(ev)=>ev.stopPropagation()} />
+        <AnimatedCheckbox size="sm" checked={selectedIds?.has(row.original.id) ?? false} onCheckedChange={(v) => onToggle?.(row.original.id, Boolean(v))} onClick={(ev)=>ev.stopPropagation()} />
       ),
     },
     {
@@ -55,8 +55,20 @@ export function EntitiesTable({ rows, onOpen, onEndReached, selectedIds, onToggl
     getRowId: (row) => row.id,
   });
 
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (!containerRef.current || !sentinelRef.current || !onEndReached) return;
+    const io = new IntersectionObserver((entries) => {
+      const entry = entries[0];
+      if (entry.isIntersecting) onEndReached();
+    }, { root: containerRef.current, rootMargin: "0px 0px 200px 0px", threshold: 0 });
+    io.observe(sentinelRef.current);
+    return () => io.disconnect();
+  }, [onEndReached, rows.length, loadingMore]);
+
   return (
-    <div className="rounded-lg border overflow-auto mb-8" onScroll={(e) => {
+    <div ref={containerRef} className="rounded-lg border overflow-auto mb-8" onScroll={(e) => {
       const el = e.currentTarget;
       if (el.scrollTop + el.clientHeight >= el.scrollHeight - 24) onEndReached?.();
     }}>
@@ -84,6 +96,10 @@ export function EntitiesTable({ rows, onOpen, onEndReached, selectedIds, onToggl
           ))}
         </TableBody>
       </Table>
+      {loadingMore ? (
+        <div className="py-3 text-center text-sm text-muted-foreground">Loading more…</div>
+      ) : null}
+      <div className="h-6" ref={sentinelRef} />
     </div>
   );
 }

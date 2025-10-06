@@ -1,6 +1,6 @@
 "use client";
 /* eslint-disable @typescript-eslint/no-explicit-any, @next/next/no-img-element */
-import { Dialog } from "@/components/ui/dialog";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useEffect, useMemo, useState } from "react";
 import { useEntity } from "@/hooks/useEntity";
 import { Input } from "@/components/ui/input";
@@ -40,7 +40,7 @@ export function EntityOverlay({ open, onOpenChange, entityId }: { open: boolean;
   const [relationNames, setRelationNames] = useState<Record<string, string>>({});
   const [relationsPickerOpen, setRelationsPickerOpen] = useState(false);
   const [interactionsPopoverOpen, setInteractionsPopoverOpen] = useState(false);
-  const [editMode, setEditMode] = useState(false);
+  const [/* editMode */, /* setEditMode */] = useState(false);
 
   // Load names for related entities for chips (tolerant to permission-denied)
   useEffect(() => {
@@ -78,8 +78,9 @@ export function EntityOverlay({ open, onOpenChange, entityId }: { open: boolean;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <div className="fixed inset-0 bg-black/40" onClick={() => onOpenChange(false)} />
-      <div className="fixed inset-0 md:inset-auto md:bottom-4 md:top-4 md:right-4 md:left-4 bg-background rounded-none md:rounded-xl shadow-xl overflow-auto">
+      <DialogContent className="p-0 sm:max-w-[min(100vw-2rem,1100px)] h-[90vh] md:h-[calc(100vh-2rem)] overflow-hidden">
+        <div className="fixed inset-0 -z-10" />
+        <div className="relative h-full overflow-auto">
         <div className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-b p-4">
           <div className="flex items-start gap-4">
             <div className="h-20 w-20 rounded-lg bg-muted overflow-hidden">
@@ -145,18 +146,13 @@ export function EntityOverlay({ open, onOpenChange, entityId }: { open: boolean;
           <div className="mt-2">
             <div className="flex items-center gap-2 mb-2">
               <div className="text-lg font-semibold">פרטי קשר ותוספים</div>
-              {!readonly && (
-                <button className="p-1 rounded hover:bg-muted" title="מצב עריכה" onClick={() => setEditMode((v) => !v)}>
-                  <Pencil className="h-4 w-4" />
-                </button>
-              )}
             </div>
             <ContactChips
               contact={entity.contact}
               addresses={entity.addresses}
               dates={entity.dates as any}
-              readonly={true}
-              editMode={editMode}
+              readonly={readonly}
+              editMode={false}
               onRemovePhone={(i) => {
                 const next = [...(entity.contact?.phone ?? [])];
                 next.splice(i, 1);
@@ -195,6 +191,48 @@ export function EntityOverlay({ open, onOpenChange, entityId }: { open: boolean;
               onRemoveDate={(i) => {
                 const next = [...(entity.dates ?? [])];
                 next.splice(i, 1);
+                save({ dates: next as any });
+              }}
+              onUpdatePhone={(i, val) => {
+                const { e164, error } = normalizePhoneToE164(val.e164 || "");
+                if (error) { alert(error); return; }
+                const next = [...(entity.contact?.phone ?? [])];
+                if (e164) next[i] = { e164 };
+                const contact = { ...(entity.contact ?? {}), phone: next } as NonNullable<typeof entity.contact>;
+                save({ contact });
+              }}
+              onUpdateEmail={(i, val) => {
+                const next = [...(entity.contact?.email ?? [])];
+                next[i] = { address: val.address } as any;
+                const contact = { ...(entity.contact ?? {}), email: next } as NonNullable<typeof entity.contact>;
+                save({ contact });
+              }}
+              onUpdateInsta={(i, val) => {
+                const next = [...(entity.contact?.insta ?? [])];
+                next[i] = { url: val.url, header: val.header } as any;
+                const contact = { ...(entity.contact ?? {}), insta: next } as NonNullable<typeof entity.contact>;
+                save({ contact });
+              }}
+              onUpdateLinkedin={(i, val) => {
+                const next = [...(entity.contact?.linkedin ?? [])];
+                next[i] = { url: val.url } as any;
+                const contact = { ...(entity.contact ?? {}), linkedin: next } as NonNullable<typeof entity.contact>;
+                save({ contact });
+              }}
+              onUpdateUrl={(i, val) => {
+                const next = [...(entity.contact?.url ?? [])];
+                next[i] = { url: val.url } as any;
+                const contact = { ...(entity.contact ?? {}), url: next } as NonNullable<typeof entity.contact>;
+                save({ contact });
+              }}
+              onUpdateAddress={(i, val) => {
+                const next = [...(entity.addresses ?? [])];
+                next[i] = { formatted: val.formatted, label: val.label, placeId: val.placeId, lat: val.lat, lng: val.lng } as any;
+                save({ addresses: next });
+              }}
+              onUpdateDate={(i, val) => {
+                const next = [...(entity.dates ?? [])];
+                next[i] = { label: val.label, date: val.date } as any;
                 save({ dates: next as any });
               }}
             />
@@ -274,7 +312,7 @@ export function EntityOverlay({ open, onOpenChange, entityId }: { open: boolean;
                         <PopoverTrigger asChild>
                           <Button size="sm" variant="outline" onClick={(event) => { event.stopPropagation(); }}>+</Button>
                         </PopoverTrigger>
-                        <PopoverContent align="end" side="bottom" className="w-[520px] p-0">
+                        <PopoverContent align="end" side="bottom" className="w-[520px] max-w-[calc(100vw-1rem)] p-0">
                           <TagPicker
                             category={cat}
                             open={openCat === cat}
@@ -368,7 +406,8 @@ export function EntityOverlay({ open, onOpenChange, entityId }: { open: boolean;
           </div>
         )}
         </div>
-      </div>
+        </div>
+      </DialogContent>
     </Dialog>
   );
 }

@@ -58,7 +58,10 @@ export function TagPicker({
     if (mode === "filter") return; // no create in filter mode
     const trimmedName = name.trim();
     if (!trimmedName) return;
-    const normalizedId = trimmedName.toLowerCase().replace(/\s+/g, "_");
+    const normalizedId = trimmedName
+      .toLowerCase()
+      .replace(/\s+/g, "_")
+      .replace(/[\/]+/g, "_");
     const ref = doc(coll, normalizedId);
 
     // Prefer local snapshot to detect duplicates quickly (by id or case-insensitive name)
@@ -121,7 +124,7 @@ export function TagPicker({
 
   const content = (
     <div
-      className={variant === "dialog" ? "fixed inset-x-4 top-20 z-50 mx-auto max-w-2xl rounded-xl bg-background p-4 shadow-lg" : "w-[520px] max-w-[80vw] bg-background border rounded-md shadow-md p-3"}
+      className={variant === "dialog" ? "fixed inset-x-4 top-20 z-[60] mx-auto max-w-2xl rounded-xl bg-background p-4 shadow-lg max-h-[70vh] overflow-auto" : "w-full p-3"}
       tabIndex={0}
       onKeyDown={(e) => { if (e.key === 'Escape') onOpenChange(false); }}
       onClick={(e) => e.stopPropagation()}
@@ -158,7 +161,7 @@ export function TagPicker({
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
         <div
-          className="fixed inset-0 bg-black/30"
+          className="fixed inset-0 bg-black/30 z-[60]"
           onClick={() => onOpenChange(false)}
         />
         {content}

@@ -22,6 +22,7 @@ export function useEntities({ types, filters }: { types: string[]; filters: TagF
   const [rows, setRows] = useState<(EntityDoc & { id: string })[]>([]);
   const lastOwnedRef = useRef<QueryDocumentSnapshot<DocumentData> | null>(null);
   const lastSharedRef = useRef<QueryDocumentSnapshot<DocumentData> | null>(null);
+  const [loadingMore, setLoadingMore] = useState(false);
   const coll = useMemo(() => collection(db, "entities"), []);
 
   // dependencies are stable state/props; include directly per lint rule
@@ -76,7 +77,7 @@ export function useEntities({ types, filters }: { types: string[]; filters: TagF
 
     if (sharedOnly) {
       // Shared: cannot combine viewer_ids array-contains with any other array-contains/any; apply tags client-side
-      const qShared = query(coll, where("viewer_ids", "array-contains", uid), ...typeConstraint, orderBy("created_at", "desc"), limit(50));
+      const qShared = query(coll, where("viewer_ids", "array-contains", uid), ...typeConstraint, orderBy("created_at", "desc"), limit(20));
       unsubscribers.push(
         onSnapshot(
           qShared,
@@ -92,8 +93,8 @@ export function useEntities({ types, filters }: { types: string[]; filters: TagF
       );
     } else if (includeShared) {
       // Owned can include tagConstraint server-side; Shared must not
-      const qOwned = query(coll, where("owner_id", "==", uid), ...typeConstraint, ...tagConstraint, orderBy("created_at", "desc"), limit(50));
-      const qShared = query(coll, where("viewer_ids", "array-contains", uid), ...typeConstraint, orderBy("created_at", "desc"), limit(50));
+      const qOwned = query(coll, where("owner_id", "==", uid), ...typeConstraint, ...tagConstraint, orderBy("created_at", "desc"), limit(20));
+      const qShared = query(coll, where("viewer_ids", "array-contains", uid), ...typeConstraint, orderBy("created_at", "desc"), limit(20));
       unsubscribers.push(
         onSnapshot(
           qOwned,
@@ -127,6 +128,7 @@ export function useEntities({ types, filters }: { types: string[]; filters: TagF
 
   async function loadMore() {
     if (!uid) return;
+    if (loadingMore) return;
 
     const typeVals = types.filter((t) => t !== "shared");
     const sharedOnly = types.includes("shared");
@@ -146,14 +148,16 @@ export function useEntities({ types, filters }: { types: string[]; filters: TagF
         ...typeConstraint,
         orderBy("created_at", "desc"),
         startAfter(lastSharedRef.current),
-        limit(50)
+        limit(20)
       );
-      const snapShared = await getDocs(qShared);
+      setLoadingMore(true);
+      const snapShared = await getDocs(qShared).finally(() => setLoadingMore(false));
       if (!snapShared.empty) {
         lastSharedRef.current = snapShared.docs[snapShared.docs.length - 1];
         batches.push(snapShared.docs.map((d) => ({ id: d.id, ...(d.data() as EntityDoc) })));
       }
     } else if (includeShared) {
+      if (!lastOwnedRef.current && !lastSharedRef.current) return;
       const promises: Promise<void>[] = [];
       if (lastOwnedRef.current) {
         const qOwned = query(
@@ -163,15 +167,17 @@ export function useEntities({ types, filters }: { types: string[]; filters: TagF
           ...tagConstraint,
           orderBy("created_at", "desc"),
           startAfter(lastOwnedRef.current),
-          limit(50)
+          limit(20)
         );
         promises.push(
-          getDocs(qOwned).then((snap) => {
+          (async () => {
+            setLoadingMore(true);
+            const snap = await getDocs(qOwned).finally(() => setLoadingMore(false));
             if (!snap.empty) {
               lastOwnedRef.current = snap.docs[snap.docs.length - 1];
               batches.push(snap.docs.map((d) => ({ id: d.id, ...(d.data() as EntityDoc) })));
             }
-          })
+          })()
         );
       }
       if (lastSharedRef.current) {
@@ -181,15 +187,17 @@ export function useEntities({ types, filters }: { types: string[]; filters: TagF
           ...typeConstraint,
           orderBy("created_at", "desc"),
           startAfter(lastSharedRef.current),
-          limit(50)
+          limit(20)
         );
         promises.push(
-          getDocs(qShared).then((snap) => {
+          (async () => {
+            setLoadingMore(true);
+            const snap = await getDocs(qShared).finally(() => setLoadingMore(false));
             if (!snap.empty) {
               lastSharedRef.current = snap.docs[snap.docs.length - 1];
               batches.push(snap.docs.map((d) => ({ id: d.id, ...(d.data() as EntityDoc) })));
             }
-          })
+          })()
         );
       }
       await Promise.all(promises);
@@ -219,7 +227,7 @@ export function useEntities({ types, filters }: { types: string[]; filters: TagF
     });
   }
 
-  return { rows, loadMore };
+  return { rows, loadMore, loadingMore };
 }
 
 

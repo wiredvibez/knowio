@@ -1,9 +1,10 @@
 "use client";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { AddressPicker } from "@/components/entity/address-picker";
+import { Trash2 } from "lucide-react";
 
 type Kind = "phone" | "email" | "insta" | "linkedin" | "url" | "address" | "date";
 
@@ -11,12 +12,20 @@ export function AddDataPopover({
   kind,
   trigger,
   onSave,
+  open: controlledOpen,
+  onOpenChange,
+  initialValue,
+  onDelete,
 }: {
   kind: Kind;
   trigger: React.ReactNode;
   onSave: (value: unknown) => void;
+  open?: boolean;
+  onOpenChange?: (v: boolean) => void;
+  initialValue?: unknown;
+  onDelete?: () => void;
 }) {
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -27,6 +36,8 @@ export function AddDataPopover({
   const [address, setAddress] = useState<string | undefined>(undefined);
 
   const finalDateLabel = useMemo(() => (dateLabel === "__custom__" ? (customDateLabel || "") : dateLabel), [dateLabel, customDateLabel]);
+
+  const isOpen = controlledOpen ?? internalOpen;
 
   function reset() {
     setBusy(false);
@@ -76,17 +87,60 @@ export function AddDataPopover({
           break;
         }
       }
-      setOpen(false);
+      if (onOpenChange) onOpenChange(false); else setInternalOpen(false);
       reset();
-    } catch (e) {
+    } catch {
       setError("שגיאה. נסו שוב");
     } finally {
       setBusy(false);
     }
   }
 
+  // Hydrate fields with initial value on open
+  useEffect(() => {
+    if (!isOpen) return;
+    if (!initialValue) return;
+    try {
+      switch (kind) {
+        case "phone": {
+          const v = initialValue as { e164?: string };
+          setText(v.e164 ?? "");
+          break;
+        }
+        case "email": {
+          const v = initialValue as { address?: string };
+          setText(v.address ?? "");
+          break;
+        }
+        case "insta":
+        case "linkedin":
+        case "url": {
+          const v = initialValue as { url?: string; header?: string };
+          setText(v.url ?? v.header ?? "");
+          break;
+        }
+        case "address": {
+          const v = initialValue as { formatted?: string; label?: string };
+          setAddress(v.formatted ?? v.label ?? "");
+          break;
+        }
+        case "date": {
+          const v = initialValue as { label?: string; date?: Date | { toDate?: () => Date } };
+          const toDate = (val: unknown): val is { toDate: () => Date } => !!val && typeof val === 'object' && 'toDate' in (val as Record<string, unknown>);
+          const d = toDate(v.date) ? v.date!.toDate() : (v.date instanceof Date ? v.date : undefined);
+          setDateStr(d ? new Date(d.getTime() - d.getTimezoneOffset()*60000).toISOString().slice(0,10) : "");
+          setDateLabel(v.label ?? "יום הולדת");
+          break;
+        }
+      }
+    } catch {
+      // ignore hydration errors
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen]);
+
   return (
-    <Popover open={open} onOpenChange={(v) => { if (!v) reset(); setOpen(v); }}>
+    <Popover open={isOpen} onOpenChange={(v) => { if (!v) reset(); if (onOpenChange) onOpenChange(v); else setInternalOpen(v); }}>
       <PopoverTrigger asChild>
         {trigger}
       </PopoverTrigger>
@@ -148,9 +202,16 @@ export function AddDataPopover({
           </div>
         )}
         {error && <div className="text-xs text-red-600">{error}</div>}
-        <div className="flex justify-end gap-2 pt-2">
-          <Button variant="secondary" onClick={() => setOpen(false)} disabled={busy}>בטל</Button>
-          <Button onClick={save} disabled={busy || !emailValid}>שמור</Button>
+        <div className="flex items-center justify-between gap-2 pt-2">
+          {onDelete ? (
+            <Button variant="destructive" onClick={() => { onDelete(); if (onOpenChange) onOpenChange(false); else setInternalOpen(false); reset(); }} disabled={busy} className="inline-flex items-center gap-1">
+              <Trash2 className="h-3 w-3" /> מחק
+            </Button>
+          ) : <span />}
+          <div className="flex gap-2">
+            <Button variant="secondary" onClick={() => { if (onOpenChange) onOpenChange(false); else setInternalOpen(false); }} disabled={busy}>בטל</Button>
+            <Button onClick={save} disabled={busy || !emailValid}>שמור</Button>
+          </div>
         </div>
       </PopoverContent>
     </Popover>
