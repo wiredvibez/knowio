@@ -32,7 +32,14 @@ export function EntitiesCards({ rows, onOpen, onEndReached, loadingMore, selecte
           <div key={e.id} className="rounded-xl border p-3 flex flex-col md:flex-row gap-3 cursor-pointer max-w-full overflow-hidden" onClick={() => onOpen?.(e.id)}>
             <div className="flex flex-col items-start">
               <AnimatedCheckbox size="md" className="mb-2" checked={selectedIds?.has(e.id) ?? false} onCheckedChange={(v) => onToggle?.(e.id, Boolean(v))} onClick={(ev)=>ev.stopPropagation()} />
-              <div className="h-16 w-16 rounded-lg bg-muted" />
+              <div className="h-16 w-16 rounded-lg bg-muted overflow-hidden">
+                {e.photo_url ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={e.photo_url} alt="entity" className="size-full object-cover" />
+                ) : (
+                  <div className="size-full" />
+                )}
+              </div>
             </div>
             <div className="flex-1 min-w-0">
               <div className="font-semibold flex items-center min-w-0">

@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { auth, db } from "@/lib/firebase";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -24,7 +24,9 @@ export function RelationsPicker({
 }) {
   const [options, setOptions] = useState<Option[]>([]);
   const [q, setQ] = useState("");
+  const [pageSize, setPageSize] = useState(50);
   const coll = useMemo(() => collection(db, "entities"), []);
+  const listRef = useRef<HTMLDivElement | null>(null);
 
   const excludeKey = excludeIds.join(',');
   useEffect(() => {
@@ -43,7 +45,7 @@ export function RelationsPicker({
     };
 
     if (uid) {
-      const qOwned = query(coll, where("owner_id", "==", uid), orderBy("created_at", "desc"), limit(50));
+      const qOwned = query(coll, where("owner_id", "==", uid), orderBy("created_at", "desc"), limit(pageSize));
       unsubs.push(
         onSnapshot(
           qOwned,
@@ -59,7 +61,7 @@ export function RelationsPicker({
         )
       );
 
-      const qShared = query(coll, where("viewer_ids", "array-contains", uid), orderBy("created_at", "desc"), limit(50));
+      const qShared = query(coll, where("viewer_ids", "array-contains", uid), orderBy("created_at", "desc"), limit(pageSize));
       unsubs.push(
         onSnapshot(
           qShared,
@@ -80,7 +82,19 @@ export function RelationsPicker({
     }
 
     return () => unsubs.forEach((u) => u());
-  }, [coll, queryOwnerId, excludeKey, excludeIds]);
+  }, [coll, queryOwnerId, excludeKey, excludeIds, pageSize]);
+
+  // If user starts typing, broaden the search window a bit
+  useEffect(() => {
+    if (q && pageSize < 300) setPageSize(300);
+  }, [q, pageSize]);
+
+  function handleScroll(e: React.UIEvent<HTMLDivElement>) {
+    const el = e.currentTarget;
+    if (el.scrollTop + el.clientHeight >= el.scrollHeight - 16) {
+      setPageSize((s) => (s < 1000 ? s + 100 : s));
+    }
+  }
 
   const selectedSet = useMemo(() => new Set(value), [value]);
   const filtered = useMemo(() => {
@@ -104,7 +118,11 @@ export function RelationsPicker({
         <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="חיפוש קשרים" />
         <button className="ml-auto text-sm opacity-70" onClick={() => setQ("")}>נקה</button>
       </div>
-      <div className="mt-3 max-h-[50vh] overflow-auto flex flex-wrap gap-2">
+      <div
+        ref={listRef}
+        className="mt-3 max-h-[50vh] overflow-auto flex flex-wrap gap-2"
+        onScroll={handleScroll}
+      >
         {filtered.map((o) => {
           const isSel = selectedSet.has(o.value);
           return (

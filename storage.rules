@@ -1,21 +1,51 @@
 rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
+    // Helpers
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isImage() {
+      return request.resource != null &&
+        request.resource.contentType.matches('image/.*');
+    }
+
+    function isSmallFile() {
+      return request.resource != null &&
+        request.resource.size < 10 * 1024 * 1024; // 10MB
+    }
+
+    function entityDoc(entityId) {
+      return get(/databases/(default)/documents/entities/$(entityId));
+    }
+
+    function isEntityOwner(entityId) {
+      return isSignedIn() && entityDoc(entityId).data.owner_id == request.auth.uid;
+    }
+
+    function canViewEntity(entityId) {
+      return isSignedIn() && (
+        entityDoc(entityId).data.owner_id == request.auth.uid ||
+        (entityDoc(entityId).data.viewer_ids != null && request.auth.uid in entityDoc(entityId).data.viewer_ids)
+      );
+    }
     // Profile photos
     match /users/{uid}/profile/{file} {
-      allow read: if request.auth != null;
-      allow write: if request.auth != null && uid == request.auth.uid &&
-        request.resource.contentType.matches('image/.*') &&
-        request.resource.size < 10 * 1024 * 1024;
+      allow read: if isSignedIn();
+      allow write: if isSignedIn() && uid == request.auth.uid && isImage() && isSmallFile();
     }
+
+    // Global entities photos (current path)
+    match /entities/{entityId}/photos/{file} {
+      allow read: if canViewEntity(entityId);
+      allow write: if isEntityOwner(entityId) && isImage() && isSmallFile();
+    }
+
+    // Legacy per-user path (kept for backward compatibility)
     match /users/{ownerUid}/entities/{entityId}/photos/{file} {
-      allow read: if request.auth != null && (
-        get(/databases/(default)/documents/entities/$(entityId)).data.owner_id == request.auth.uid ||
-        (request.auth.uid in get(/databases/(default)/documents/entities/$(entityId)).data.viewer_ids)
-      );
-      allow write: if request.auth != null && ownerUid == request.auth.uid &&
-        request.resource.contentType.matches('image/.*') &&
-        request.resource.size < 10 * 1024 * 1024;
+      allow read: if canViewEntity(entityId);
+      allow write: if isSignedIn() && ownerUid == request.auth.uid && isImage() && isSmallFile();
     }
   }
 }

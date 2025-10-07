@@ -13,22 +13,34 @@ import {
   QueryConstraint,
   QueryDocumentSnapshot,
   DocumentData,
+  documentId,
+  Query,
 } from "firebase/firestore";
 import type { EntityDoc } from "@/types/firestore";
 import type { TagFilters } from "@/components/network/network-header";
 
-export function useEntities({ types, filters }: { types: string[]; filters: TagFilters }) {
+export function useEntities({ types, filters, search }: { types: string[]; filters: TagFilters; search?: string }) {
   const uid = auth.currentUser?.uid;
   const [rows, setRows] = useState<(EntityDoc & { id: string })[]>([]);
-  const lastOwnedRef = useRef<QueryDocumentSnapshot<DocumentData> | null>(null);
-  const lastSharedRef = useRef<QueryDocumentSnapshot<DocumentData> | null>(null);
+  const lastOwnedRef = useRef<QueryDocumentSnapshot<DocumentData, DocumentData> | null>(null);
+  const lastSharedRef = useRef<QueryDocumentSnapshot<DocumentData, DocumentData> | null>(null);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [initializing, setInitializing] = useState(true);
   const coll = useMemo(() => collection(db, "entities"), []);
 
   // dependencies are stable state/props; include directly per lint rule
 
   useEffect(() => {
-    if (!uid) return;
+    if (!uid) {
+      setRows([]);
+      setLoading(false);
+      setInitializing(false);
+      return;
+    }
+
+    const qText = (search || "").trim().toLowerCase();
+    const searchActive = qText.length > 0;
 
     // Audience selection semantics (PLAN):
     // - Default (no chips): include owned OR shared
@@ -38,17 +50,11 @@ export function useEntities({ types, filters }: { types: string[]; filters: TagF
     const typeVals = types.filter((t) => t !== "shared");
     const sharedOnly = types.includes("shared");
     const includeShared = !sharedOnly; // default: include owned+shared unless explicitly shared-only
-
     const firstCat = (Object.keys(filters) as (keyof TagFilters)[]).find((k) => filters[k].length > 0);
 
-    let ownedBatch: (EntityDoc & { id: string })[] = [];
-    let sharedBatch: (EntityDoc & { id: string })[] = [];
-
-    function applyClientFiltersAndSet() {
-      const union = includeShared ? [...ownedBatch, ...sharedBatch] : sharedOnly ? sharedBatch : ownedBatch;
-      const byId: Record<string, EntityDoc & { id: string }> = Object.create(null);
-      for (const r of union) byId[r.id] = r;
-      const merged = Object.values(byId).filter((e) => {
+    // Helper: normalize + sort + client filters
+    function normalizeAndFilter(input: (EntityDoc & { id: string })[]): (EntityDoc & { id: string })[] {
+      const merged = input.filter((e) => {
         for (const cat of ["from", "relationship", "character", "field"] as const) {
           const sel = filters[cat] as string[];
           if (sel.length === 0) continue;
@@ -57,13 +63,127 @@ export function useEntities({ types, filters }: { types: string[]; filters: TagF
         }
         return true;
       });
-      const normalized = merged
+      return merged
         .map((e) => ({ ...e, name: (e.name ?? "").toString() }))
         .sort((a, b) => {
           const ad = (a.created_at as unknown as { toMillis?: () => number })?.toMillis?.() ?? 0;
           const bd = (b.created_at as unknown as { toMillis?: () => number })?.toMillis?.() ?? 0;
           return bd - ad;
         });
+    }
+
+    // If search is active, fetch all associated entities and filter client-side by name, info, and tag names
+    if (searchActive) {
+      setLoading(true);
+      setInitializing(true);
+      let cancelled = false;
+      (async () => {
+        const typeConstraint: QueryConstraint[] = typeVals.length > 0 ? [where("type", "in", typeVals.slice(0, 10))] : [];
+
+        async function fetchAll(qBase: Query<DocumentData>): Promise<(EntityDoc & { id: string })[]> {
+          const out: (EntityDoc & { id: string })[] = [];
+          let last: QueryDocumentSnapshot<DocumentData, DocumentData> | null = null;
+          // page in chunks to avoid timeouts
+          for (;;) {
+            let qPage: Query<DocumentData>;
+            if (last) {
+              qPage = query(qBase, startAfter(last), limit(200));
+            } else {
+              qPage = query(qBase, limit(200));
+            }
+            const snap = await getDocs(qPage);
+            if (snap.empty) break;
+            out.push(...snap.docs.map((d) => ({ id: d.id, ...(d.data() as EntityDoc) })));
+            last = snap.docs[snap.docs.length - 1];
+            if (snap.size < 200) break;
+          }
+          return out;
+        }
+
+        const ownedBase = query(coll, where("owner_id", "==", uid), ...typeConstraint, orderBy("created_at", "desc"));
+        const sharedBase = includeShared ? query(coll, where("viewer_ids", "array-contains", uid), ...typeConstraint, orderBy("created_at", "desc")) : null;
+
+        const [ownedAll, sharedAll] = await Promise.all([
+          fetchAll(ownedBase),
+          sharedBase ? fetchAll(sharedBase) : Promise.resolve<(EntityDoc & { id: string })[]>([]),
+        ]);
+
+        if (cancelled) return;
+
+        // Build tag name maps
+        const tagIdsByCat: Record<"from" | "relationship" | "character" | "field", Set<string>> = {
+          from: new Set(), relationship: new Set(), character: new Set(), field: new Set(),
+        };
+        for (const e of [...ownedAll, ...sharedAll]) {
+          (Object.keys(tagIdsByCat) as (keyof typeof tagIdsByCat)[]).forEach((cat) => {
+            const arr = (e as unknown as Record<string, unknown>)[cat] as unknown;
+            if (Array.isArray(arr)) {
+              for (const id of arr as string[]) tagIdsByCat[cat].add(id);
+            }
+          });
+        }
+
+        async function loadTagNames(category: keyof typeof tagIdsByCat): Promise<Record<string, { name: string }>> {
+          const out: Record<string, { name: string }> = {};
+          const ids = Array.from(tagIdsByCat[category]);
+          if (ids.length === 0) return out;
+          const collTags = collection(db, `picker_${category}`);
+          for (let i = 0; i < ids.length; i += 10) {
+            const chunk = ids.slice(i, i + 10);
+            const q = query(collTags, where(documentId(), "in", chunk as string[]));
+            const snap = await getDocs(q);
+            snap.forEach((d) => { const data = d.data() as { name?: unknown }; out[d.id] = { name: ((data?.name ?? "") as string).toString() }; });
+          }
+          return out;
+        }
+
+        const [fromNames, relationshipNames, characterNames, fieldNames] = await Promise.all([
+          loadTagNames("from"), loadTagNames("relationship"), loadTagNames("character"), loadTagNames("field"),
+        ]);
+
+        if (cancelled) return;
+
+        function entityMatches(e: EntityDoc): boolean {
+          const name = (e.name || "").toString().toLowerCase();
+          const info = (e.info || "").toString().toLowerCase();
+          if (name.includes(qText) || info.includes(qText)) return true;
+          for (const cat of ["from", "relationship", "character", "field"] as const) {
+            const ids = ((e as unknown as Record<string, unknown>)[cat] ?? []) as string[];
+            for (const id of ids) {
+              const nm = (cat === "from" ? fromNames[id]
+                : cat === "relationship" ? relationshipNames[id]
+                : cat === "character" ? characterNames[id]
+                : fieldNames[id])?.name?.toLowerCase();
+              if (nm && nm.includes(qText)) return true;
+            }
+          }
+          return false;
+        }
+
+        const byId: Record<string, EntityDoc & { id: string }> = Object.create(null);
+        const base = sharedOnly ? sharedAll : includeShared ? [...ownedAll, ...sharedAll] : ownedAll;
+        for (const e of base) {
+          const id = (e as unknown as { id?: string }).id;
+          if (id && entityMatches(e)) byId[id] = { ...(e as EntityDoc), id } as EntityDoc & { id: string };
+        }
+        const normalized = normalizeAndFilter(Object.values(byId));
+        if (!cancelled) setRows(normalized);
+        if (!cancelled) setLoading(false);
+        if (!cancelled) setInitializing(false);
+      })();
+      return () => { cancelled = true; setLoading(false); setInitializing(false); };
+    }
+
+    // Default realtime mode (no search): subscribe and paginate as before
+    let ownedBatch: (EntityDoc & { id: string })[] = [];
+    let sharedBatch: (EntityDoc & { id: string })[] = [];
+    setInitializing(true);
+
+    function applyClientFiltersAndSet() {
+      const union = includeShared ? [...ownedBatch, ...sharedBatch] : sharedOnly ? sharedBatch : ownedBatch;
+      const byId: Record<string, EntityDoc & { id: string }> = Object.create(null);
+      for (const r of union) byId[r.id] = r;
+      const normalized = normalizeAndFilter(Object.values(byId));
       setRows(normalized);
     }
 
@@ -71,12 +191,17 @@ export function useEntities({ types, filters }: { types: string[]; filters: TagF
     lastOwnedRef.current = null;
     lastSharedRef.current = null;
 
+    // Track initial snapshot completion
+    let pendingInitial = 0;
+    let ownedSeen = false;
+    let sharedSeen = false;
+
     // Build constraints separately to avoid combining array-contains on viewer_ids with array-contains-any on tags
     const typeConstraint: QueryConstraint[] = typeVals.length > 0 ? [where("type", "in", typeVals.slice(0, 10))] : [];
     const tagConstraint: QueryConstraint[] = firstCat ? [where(firstCat as string, "array-contains-any", filters[firstCat].slice(0, 10))] : [];
 
     if (sharedOnly) {
-      // Shared: cannot combine viewer_ids array-contains with any other array-contains/any; apply tags client-side
+      pendingInitial = 1;
       const qShared = query(coll, where("viewer_ids", "array-contains", uid), ...typeConstraint, orderBy("created_at", "desc"), limit(20));
       unsubscribers.push(
         onSnapshot(
@@ -85,6 +210,7 @@ export function useEntities({ types, filters }: { types: string[]; filters: TagF
             sharedBatch = snap.docs.map((d) => ({ id: d.id, ...(d.data() as EntityDoc) }));
             lastSharedRef.current = snap.docs[snap.docs.length - 1] ?? null;
             applyClientFiltersAndSet();
+            if (!sharedSeen) { sharedSeen = true; pendingInitial--; if (pendingInitial <= 0) setInitializing(false); }
           },
           (err) => {
             console.warn("shared entities snapshot error", err.code);
@@ -92,7 +218,7 @@ export function useEntities({ types, filters }: { types: string[]; filters: TagF
         )
       );
     } else if (includeShared) {
-      // Owned can include tagConstraint server-side; Shared must not
+      pendingInitial = 2;
       const qOwned = query(coll, where("owner_id", "==", uid), ...typeConstraint, ...tagConstraint, orderBy("created_at", "desc"), limit(20));
       const qShared = query(coll, where("viewer_ids", "array-contains", uid), ...typeConstraint, orderBy("created_at", "desc"), limit(20));
       unsubscribers.push(
@@ -102,6 +228,7 @@ export function useEntities({ types, filters }: { types: string[]; filters: TagF
             ownedBatch = snap.docs.map((d) => ({ id: d.id, ...(d.data() as EntityDoc) }));
             lastOwnedRef.current = snap.docs[snap.docs.length - 1] ?? null;
             applyClientFiltersAndSet();
+            if (!ownedSeen) { ownedSeen = true; pendingInitial--; if (pendingInitial <= 0) setInitializing(false); }
           },
           (err) => {
             console.warn("owned entities snapshot error", err.code);
@@ -115,6 +242,7 @@ export function useEntities({ types, filters }: { types: string[]; filters: TagF
             sharedBatch = snap.docs.map((d) => ({ id: d.id, ...(d.data() as EntityDoc) }));
             lastSharedRef.current = snap.docs[snap.docs.length - 1] ?? null;
             applyClientFiltersAndSet();
+            if (!sharedSeen) { sharedSeen = true; pendingInitial--; if (pendingInitial <= 0) setInitializing(false); }
           },
           (err) => {
             console.warn("shared entities snapshot error", err.code);
@@ -123,11 +251,15 @@ export function useEntities({ types, filters }: { types: string[]; filters: TagF
       );
     }
 
-    return () => unsubscribers.forEach((u) => u());
-  }, [uid, coll, types, filters]);
+    return () => {
+      unsubscribers.forEach((u) => u());
+      setInitializing(false);
+    };
+  }, [uid, coll, types, filters, search]);
 
   async function loadMore() {
     if (!uid) return;
+    if ((search || "").trim()) return; // search mode loads all; skip pagination
     if (loadingMore) return;
 
     const typeVals = types.filter((t) => t !== "shared");
@@ -227,7 +359,7 @@ export function useEntities({ types, filters }: { types: string[]; filters: TagF
     });
   }
 
-  return { rows, loadMore, loadingMore };
+  return { rows, loadMore, loadingMore, loading, initializing };
 }
 
 

@@ -9,20 +9,31 @@ export function useUserDoc() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let unsubUserDoc: (() => void) | undefined;
     const unsubAuth = auth.onAuthStateChanged((u) => {
+      // Clean up previous user doc subscription when auth state changes
+      if (unsubUserDoc) { unsubUserDoc(); unsubUserDoc = undefined; }
+
       if (!u) {
         setUser(null);
         setLoading(false);
         return;
       }
+
       const ref = doc(db, "users", u.uid);
-      const unsub = onSnapshot(ref, (snap) => {
+      unsubUserDoc = onSnapshot(ref, (snap) => {
         setUser((snap.data() as UserDoc) ?? null);
         setLoading(false);
       });
-      return () => unsub();
     });
-    return () => unsubAuth();
+
+    return () => {
+      if (unsubUserDoc) {
+        unsubUserDoc();
+        unsubUserDoc = undefined;
+      }
+      unsubAuth();
+    };
   }, []);
 
   async function saveNickname(nickname: string) {

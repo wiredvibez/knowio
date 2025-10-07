@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useLayoutEffect, useRef } from "react";
 import { db } from "@/lib/firebase";
 import { collection, onSnapshot, orderBy, query, doc, setDoc, serverTimestamp, writeBatch, increment, getDoc } from "firebase/firestore";
 import { Dialog } from "@/components/ui/dialog";
@@ -48,6 +48,21 @@ export function TagPicker({
 
   const filtered = tags.filter((t) => t.name.toLowerCase().includes(q.toLowerCase()));
   const ordered = useMemo(() => filtered, [filtered]);
+
+  // Limit visible height to approximately first 30 chips; beyond that, scroll
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const sentinelRef = useRef<HTMLSpanElement | null>(null);
+  const [maxHeightPx, setMaxHeightPx] = useState<number | undefined>(undefined);
+
+  useLayoutEffect(() => {
+    if (!open) { setMaxHeightPx(undefined); return; }
+    if (ordered.length <= 30) { setMaxHeightPx(undefined); return; }
+    const el = sentinelRef.current;
+    if (el) {
+      const top = el.offsetTop;
+      if (typeof top === "number" && top > 0) setMaxHeightPx(top);
+    }
+  }, [ordered, open]);
 
   async function createTag(name: string) {
     if (mode === "filter") return; // no create in filter mode
@@ -126,16 +141,21 @@ export function TagPicker({
       onMouseDown={(e) => e.stopPropagation()}
     >
       <div className="flex items-center gap-2">
-        <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="חיפוש תגיות" />
+        <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="חיפוש ויצירת תגיות" />
         {mode === "edit" && (
           <Button onClick={() => q && createTag(q)} variant="secondary">+ {q}</Button>
         )}
         <button className="ml-auto text-sm opacity-70" onClick={(e) => { e.stopPropagation(); onOpenChange(false); }}>✕</button>
       </div>
-      <div className="mt-3 max-h-[50vh] overflow-auto flex flex-wrap gap-2">
-        {ordered.map((t) => (
+      <div
+        ref={containerRef}
+        className="mt-3 max-h-[50vh] overflow-auto flex flex-wrap gap-2"
+        style={{ maxHeight: maxHeightPx ? `${maxHeightPx}px` : undefined }}
+      >
+        {ordered.map((t, i) => (
           <Badge
             key={t.id}
+            ref={i === 30 ? sentinelRef : undefined}
             onClick={() => toggleTag(t)}
             className="cursor-pointer"
             style={{

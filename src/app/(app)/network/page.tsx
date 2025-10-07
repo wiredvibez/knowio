@@ -26,10 +26,36 @@ export default function NetworkPage() {
   const [filters, setFilters] = useState<TagFilters>({ from: [], relationship: [], character: [], field: [] });
   const [search, setSearch] = useState("");
   const [view, setView] = useState<"table" | "cards">("table");
+  const [searchInput, setSearchInput] = useState("");
   const searchParams = useSearchParams();
   const router = useRouter();
   const openId = searchParams.get("entity") || undefined;
-  const { rows, loadMore, loadingMore } = useEntities({ types, filters });
+  const { rows, loadMore, loadingMore, loading, initializing } = useEntities({ types, filters, search });
+  const displayRows = useMemo(() => {
+    const q = (search || "").trim().toLowerCase();
+    if (!q) return rows;
+    const qId = q.replace(/\s+/g, "_");
+    function matchesTags(e: any): boolean {
+      for (const cat of ["from", "relationship", "character", "field"] as const) {
+        const ids: string[] = (e?.[cat] ?? []) as string[];
+        if (ids.some((id) => (id || "").toString().toLowerCase().includes(qId))) return true;
+      }
+      return false;
+    }
+    return rows.filter((e) => {
+      const name = (e.name || "").toString().toLowerCase();
+      const info = (e.info || "").toString().toLowerCase();
+      return name.includes(q) || info.includes(q) || matchesTags(e);
+    });
+  }, [rows, search]);
+
+  // Debounce search input -> search state
+  useEffect(() => {
+    const handle = setTimeout(() => {
+      setSearch(searchInput);
+    }, 300);
+    return () => clearTimeout(handle);
+  }, [searchInput]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const selectedArray = useMemo(() => Array.from(selected), [selected]);
   const [shareOpen, setShareOpen] = useState(false);
@@ -69,6 +95,16 @@ export default function NetworkPage() {
       viewInitializedRef.current = true;
     }
   }, [user]);
+
+  const [readyToShowContent, setReadyToShowContent] = useState(false);
+  useEffect(() => {
+    if (initializing) {
+      setReadyToShowContent(false);
+      return;
+    }
+    const raf = requestAnimationFrame(() => setReadyToShowContent(true));
+    return () => cancelAnimationFrame(raf);
+  }, [initializing, displayRows.length, view]);
 
   async function handleViewChange(next: "table" | "cards") {
     setView(next);
@@ -516,8 +552,6 @@ export default function NetworkPage() {
         onTypesChange={setTypes}
         filters={filters}
         onFiltersChange={setFilters}
-        search={search}
-        onSearchChange={setSearch}
       />
       <ActionBar
         onShare={() => setShareOpen(true)}
@@ -531,6 +565,14 @@ export default function NetworkPage() {
       />
       <div className="flex items-center gap-3">
         <ViewToggle view={view} onChange={handleViewChange} />
+        <div className="ms-auto flex items-center gap-2">
+          <input
+            className="h-10 rounded-md border px-3 text-sm"
+            placeholder="חיפוש"
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+          />
+        </div>
       </div>
       {selected.size > 0 && (
         <div className="flex items-center">
@@ -541,12 +583,12 @@ export default function NetworkPage() {
       )}
       {view === "table" ? (
         <EntitiesTable
-          rows={rows}
+          rows={displayRows}
           onEndReached={loadMore}
           loadingMore={loadingMore}
           selectedIds={selected}
           onToggle={(id, checked) => setSelected((prev) => { const n = new Set(prev); if (checked) n.add(id); else n.delete(id); return n; })}
-          onToggleAll={(checked) => setSelected(checked ? new Set(rows.map(r=>r.id)) : new Set())}
+          onToggleAll={(checked) => setSelected(checked ? new Set(displayRows.map(r=>r.id)) : new Set())}
           onOpen={(id) => {
             const sp = new URLSearchParams(searchParams.toString());
             sp.set("entity", id);
@@ -555,7 +597,7 @@ export default function NetworkPage() {
         />
       ) : (
         <EntitiesCards
-          rows={rows}
+          rows={displayRows}
           onEndReached={loadMore}
           loadingMore={loadingMore}
           selectedIds={selected}
@@ -595,7 +637,11 @@ export default function NetworkPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      <LoadingOverlay show={importing} label="Importing entities..." />
+      <LoadingOverlay
+        show={importing || loading || !readyToShowContent}
+        label={importing ? "Importing entities..." : initializing ? "Loading your network..." : "Searching..."}
+        blocking={false}
+      />
 
       {/* Import summary dialog */}
       <Dialog open={summaryOpen} onOpenChange={setSummaryOpen}>

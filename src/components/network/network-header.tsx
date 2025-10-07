@@ -15,15 +15,11 @@ export function NetworkHeader({
   onTypesChange,
   filters,
   onFiltersChange,
-  search,
-  onSearchChange,
 }: {
   types: string[];
   onTypesChange: (t: string[]) => void;
   filters: TagFilters;
   onFiltersChange: (f: TagFilters) => void;
-  search: string;
-  onSearchChange: (s: string) => void;
 }) {
   const typeOptions = ["person", "organization", "community", "shared"];
   const [openCat, setOpenCat] = useState<null | "from" | "relationship" | "character" | "field">(null);
@@ -88,14 +84,6 @@ export function NetworkHeader({
             </div>
           );
         })}
-      </div>
-      <div className="flex items-center gap-2">
-        <input
-          className="h-10 rounded-md border px-3 text-sm"
-          placeholder="חיפוש"
-          value={search}
-          onChange={(e) => onSearchChange(e.target.value)}
-        />
       </div>
     </div>
     <TagPicker

@@ -57,7 +57,11 @@ export function ProfilePhotoUpload({
         onClick={() => fileRef.current?.click()}
       >
         <Avatar className="size-full">
-          <AvatarImage src={previewUrl} alt="avatar" />
+          <AvatarImage
+            src={previewUrl && previewUrl.trim() !== "" ? previewUrl : undefined}
+            alt="avatar"
+            referrerPolicy="no-referrer"
+          />
           <AvatarFallback>🙂</AvatarFallback>
         </Avatar>
         <div className="absolute inset-0 hidden items-center justify-center rounded-full bg-black/40 text-white group-hover:flex">

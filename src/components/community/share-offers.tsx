@@ -20,7 +20,11 @@ export function ShareOffers() {
       const rows = snap.docs.map((d) => ({ ...(d.data() as Omit<Offer, 'id'>), id: d.id })) as Offer[];
       setOffers(rows);
       const senders = rows.map((r) => r.sender_id);
-      fetchUserNames(senders).then(setUserNames);
+      if (senders.length === 0) { setUserNames({}); return; }
+      const t0 = performance.now();
+      fetchUserNames(senders).then((m) => {
+        setUserNames(m);
+      });
     });
     return () => unsub();
   }, [uid]);

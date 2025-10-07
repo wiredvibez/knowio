@@ -1,5 +1,5 @@
 import React from "react";
-import Image from "next/image";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 export function BrandHeader({ title, avatarUrl }: { title: string; avatarUrl?: string | null }) {
   return (
@@ -8,9 +8,16 @@ export function BrandHeader({ title, avatarUrl }: { title: string; avatarUrl?: s
         <span className="font-extrabold bg-gradient-to-r from-purple-600 via-fuchsia-500 to-blue-600 bg-clip-text text-transparent">peepz</span>
         <span className="text-black">|</span>
         <span className="font-extrabold text-black">{title}</span>
-        {avatarUrl ? (
-          <Image src={avatarUrl} alt="profile" width={32} height={32} className="h-8 w-8 rounded-full object-cover" />
-        ) : null}
+        {avatarUrl && avatarUrl.trim() !== "" && (
+          <Avatar className="h-8 w-8">
+            <AvatarImage
+              src={avatarUrl}
+              alt="profile"
+              referrerPolicy="no-referrer"
+            />
+            <AvatarFallback>אני</AvatarFallback>
+          </Avatar>
+        )}
       </div>
     </div>
   );

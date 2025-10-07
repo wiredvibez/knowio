@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect } from "react";
 import { Network as NetworkIcon, Users2 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useUserDoc } from "@/hooks/useUserDoc";
@@ -19,6 +20,21 @@ const TABS: Tab[] = [
 
 export function ToolbarTabs() {
   const pathname = usePathname();
+  
+
+  useEffect(() => {
+    // Event loop lag probe
+    let last = performance.now();
+    const id = window.setInterval(() => {
+      const now = performance.now();
+      const drift = now - last - 1000;
+      if (drift > 250) {
+        console.warn("[Perf] EventLoopLag>250ms", { drift: Math.round(drift), now });
+      }
+      last = now;
+    }, 1000);
+    return () => window.clearInterval(id);
+  }, []);
   return (
     <nav className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50">
       <div className="flex items-center gap-2 rounded-full bg-foreground/90 text-background backdrop-blur px-3 py-2 shadow-lg">
@@ -65,7 +81,11 @@ function ProfileAvatar() {
   const url = user?.photo_url;
   return (
     <Avatar className="h-7 w-7 border border-background/20">
-      <AvatarImage src={url} alt="me" />
+      <AvatarImage
+        src={url && url.trim() !== "" ? url : undefined}
+        alt="me"
+        referrerPolicy="no-referrer"
+      />
       <AvatarFallback>אני</AvatarFallback>
     </Avatar>
   );

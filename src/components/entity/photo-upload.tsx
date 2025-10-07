@@ -35,7 +35,8 @@ export function EntityPhotoUpload({
     setPreviewUrl(local);
     setBusy(true);
     try {
-      const path = `users/${ownerUid}/entities/${entityId}/photos/photo.jpg`;
+      // Store under global entities collection path
+      const path = `entities/${entityId}/photos/photo.jpg`;
       const r = ref(storage, path);
       await uploadBytes(r, file, { contentType: file.type || "image/jpeg" });
       const url = await getDownloadURL(r);

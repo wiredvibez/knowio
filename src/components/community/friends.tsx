@@ -16,7 +16,11 @@ export function FriendsManager() {
       ...requestsIn.map((r) => r.from),
       ...requestsOut.map((r) => r.to),
     ];
-    fetchUserNames(ids).then(setNameMap);
+    if (ids.length === 0) { setNameMap({}); return; }
+    const t0 = performance.now();
+    fetchUserNames(ids).then((m) => {
+      setNameMap(m);
+    });
   }, [friends, requestsIn, requestsOut]);
 
   return (
