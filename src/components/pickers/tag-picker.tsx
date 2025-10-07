@@ -47,12 +47,7 @@ export function TagPicker({
   }, [open, category]);
 
   const filtered = tags.filter((t) => t.name.toLowerCase().includes(q.toLowerCase()));
-  const ordered = useMemo(() => {
-    const selectedSet = new Set(selected);
-    const sel = filtered.filter((t) => selectedSet.has(t.id));
-    const rest = filtered.filter((t) => !selectedSet.has(t.id));
-    return [...sel, ...rest];
-  }, [filtered, selected]);
+  const ordered = useMemo(() => filtered, [filtered]);
 
   async function createTag(name: string) {
     if (mode === "filter") return; // no create in filter mode

@@ -12,15 +12,17 @@ function SharedChip() {
 }
 
 export function EntitiesCards({ rows, onOpen, onEndReached, loadingMore, selectedIds, onToggle }: { rows: (EntityDoc & { id: string })[]; onOpen?: (id: string) => void; onEndReached?: () => void; loadingMore?: boolean; selectedIds?: Set<string>; onToggle?: (id: string, checked: boolean) => void }) {
-  const sentinelRef = useRef<HTMLDivElement | null>(null);
+  const hasScrolledRef = useRef(false);
   useEffect(() => {
-    if (!sentinelRef.current || !onEndReached) return;
-    const io = new IntersectionObserver((entries) => {
-      const entry = entries[0];
-      if (entry.isIntersecting) onEndReached();
-    }, { root: null, rootMargin: "0px 0px 200px 0px", threshold: 0 });
-    io.observe(sentinelRef.current);
-    return () => io.disconnect();
+    if (!onEndReached) return;
+    function onWindowScroll() {
+      if (window.scrollY > 0) hasScrolledRef.current = true;
+      if (loadingMore) return;
+      const nearBottom = window.scrollY + window.innerHeight >= document.documentElement.scrollHeight - 24;
+      if (hasScrolledRef.current && nearBottom) onEndReached?.();
+    }
+    window.addEventListener("scroll", onWindowScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onWindowScroll);
   }, [onEndReached, rows.length, loadingMore]);
 
   return (
@@ -65,7 +67,7 @@ export function EntitiesCards({ rows, onOpen, onEndReached, loadingMore, selecte
       {loadingMore ? (
         <div className="py-3 text-center text-sm text-muted-foreground">Loading more…</div>
       ) : null}
-      <div className="h-6" ref={sentinelRef} />
+      <div className="h-6" />
     </div>
   );
 }

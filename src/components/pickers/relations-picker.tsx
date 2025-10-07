@@ -1,7 +1,8 @@
 "use client";
-import Select from "react-select";
 import { useEffect, useMemo, useState } from "react";
 import { auth, db } from "@/lib/firebase";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { collection, limit, onSnapshot, orderBy, query, where } from "firebase/firestore";
 
 type Option = { value: string; label: string };
@@ -22,6 +23,7 @@ export function RelationsPicker({
   readonly?: boolean;
 }) {
   const [options, setOptions] = useState<Option[]>([]);
+  const [q, setQ] = useState("");
   const coll = useMemo(() => collection(db, "entities"), []);
 
   const excludeKey = excludeIds.join(',');
@@ -53,9 +55,7 @@ export function RelationsPicker({
             });
             update();
           },
-          (err) => {
-            console.warn("relations owned snapshot error", err.code);
-          }
+          () => {}
         )
       );
 
@@ -71,9 +71,7 @@ export function RelationsPicker({
             });
             update();
           },
-          (err) => {
-            console.warn("relations shared snapshot error", err.code);
-          }
+          () => {}
         )
       );
     } else {
@@ -84,31 +82,47 @@ export function RelationsPicker({
     return () => unsubs.forEach((u) => u());
   }, [coll, queryOwnerId, excludeKey, excludeIds]);
 
-  if (multiple) {
-    return (
-      <Select
-        isMulti
-        options={options}
-        value={options.filter((o) => value.includes(o.value))}
-        onChange={(vals) => onChange(vals.map((v) => v.value))}
-        placeholder="בחר קשרים"
-        classNamePrefix="rs"
-        styles={{ menu: (s) => ({ ...s, zIndex: 50 }) }}
-        isDisabled={readonly}
-      />
-    );
+  const selectedSet = useMemo(() => new Set(value), [value]);
+  const filtered = useMemo(() => {
+    const qq = q.toLowerCase();
+    return options.filter((o) => o.label.toLowerCase().includes(qq));
+  }, [options, q]);
+
+  function toggle(id: string) {
+    if (readonly) return;
+    if (!multiple) {
+      onChange(value[0] === id ? [] : [id]);
+      return;
+    }
+    const next = selectedSet.has(id) ? value.filter((v) => v !== id) : [...value, id];
+    onChange(next);
   }
 
-  const selected = options.find((o) => value[0] === o.value) ?? null;
   return (
-    <Select
-      options={options}
-      value={selected}
-      onChange={(val) => onChange(val ? [val.value] : [])}
-      placeholder="בחר קשר"
-      classNamePrefix="rs"
-      styles={{ menu: (s) => ({ ...s, zIndex: 50 }) }}
-      isDisabled={readonly}
-    />
+    <div className="w-[480px] max-w-[calc(100vw-1rem)] p-3">
+      <div className="flex items-center gap-2">
+        <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="חיפוש קשרים" />
+        <button className="ml-auto text-sm opacity-70" onClick={() => setQ("")}>נקה</button>
+      </div>
+      <div className="mt-3 max-h-[50vh] overflow-auto flex flex-wrap gap-2">
+        {filtered.map((o) => {
+          const isSel = selectedSet.has(o.value);
+          return (
+            <Badge
+              key={o.value}
+              variant={isSel ? "default" : "outline"}
+              className={`cursor-pointer ${isSel ? "" : "bg-transparent"}`}
+              onClick={() => toggle(o.value)}
+              title={o.label}
+            >
+              {o.label}
+            </Badge>
+          );
+        })}
+        {filtered.length === 0 && (
+          <div className="text-sm text-muted-foreground">אין תוצאות</div>
+        )}
+      </div>
+    </div>
   );
 }

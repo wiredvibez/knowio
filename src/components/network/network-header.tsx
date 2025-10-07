@@ -5,6 +5,8 @@ import { useState } from "react";
 import { TagPicker } from "@/components/pickers/tag-picker";
 import { CATEGORY_LABELS } from "@/constants/tags";
 import { AddEntityDialog } from "@/components/entity/add-entity-dialog";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { NewInteractionForm } from "@/components/entity/interactions";
 
 export type TagFilters = { from: string[]; relationship: string[]; character: string[]; field: string[] };
 
@@ -26,12 +28,24 @@ export function NetworkHeader({
   const typeOptions = ["person", "organization", "community", "shared"];
   const [openCat, setOpenCat] = useState<null | "from" | "relationship" | "character" | "field">(null);
   const [addOpen, setAddOpen] = useState(false);
+  const [interactionOpen, setInteractionOpen] = useState(false);
 
   return (
     <>
     <div className="w-full flex flex-col sm:flex-row sm:items-center gap-3">
       <div className="flex-1 flex flex-wrap items-center gap-2">
         <Button size="lg" className="rounded-xl" onClick={() => setAddOpen(true)}>+</Button>
+        <Popover open={interactionOpen} onOpenChange={setInteractionOpen}>
+          <PopoverTrigger asChild>
+            <Button size="lg" variant="outline" className="rounded-xl">+ אינטראקציה</Button>
+          </PopoverTrigger>
+          <PopoverContent align="start" side="bottom" className="w-[520px] max-w-[calc(100vw-1rem)] p-3">
+            <NewInteractionForm
+              onCancel={() => setInteractionOpen(false)}
+              onCreated={() => setInteractionOpen(false)}
+            />
+          </PopoverContent>
+        </Popover>
         <div className="h-6 w-px bg-border" />
         {typeOptions.map((t) => (
           <Badge

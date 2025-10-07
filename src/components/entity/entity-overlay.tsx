@@ -338,22 +338,22 @@ export function EntityOverlay({ open, onOpenChange, entityId }: { open: boolean;
           <div className="flex items-center gap-2 mb-2">
             <div className="text-lg font-semibold">קשרים</div>
             {!readonly && (
-              <Button size="sm" variant="outline" onClick={() => setRelationsPickerOpen((v) => !v)}>+</Button>
+              <Popover open={relationsPickerOpen} onOpenChange={setRelationsPickerOpen}>
+                <PopoverTrigger asChild>
+                  <Button size="sm" variant="outline">+</Button>
+                </PopoverTrigger>
+                <PopoverContent align="end" side="bottom" className="w-[520px] max-w-[calc(100vw-1rem)] p-0">
+                  <RelationsPicker
+                    value={entity.relations ?? []}
+                    onChange={(ids) => { save({ relations: ids }); setRelationsPickerOpen(false); }}
+                    excludeIds={[entity.id!]}
+                    readonly={readonly}
+                  />
+                </PopoverContent>
+              </Popover>
             )}
           </div>
-          {relationsPickerOpen && !readonly && (
-            <div className="mb-2 inline-block max-w-full">
-              <div className="inline-flex items-start gap-2 rounded-lg border p-2 bg-background">
-                <RelationsPicker
-                  value={entity.relations ?? []}
-                  onChange={(ids) => { save({ relations: ids }); setRelationsPickerOpen(false); }}
-                  excludeIds={[entity.id!]}
-                  readonly={readonly}
-                />
-                <button className="text-sm px-2 py-1 border rounded" onClick={() => setRelationsPickerOpen(false)}>×</button>
-              </div>
-            </div>
-          )}
+          {/* picker shown in popover above */}
           <div className="flex flex-wrap gap-1">
             {(entity.relations ?? []).map((rid) => (
               <div key={rid} className="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-sm cursor-pointer">
@@ -381,7 +381,8 @@ export function EntityOverlay({ open, onOpenChange, entityId }: { open: boolean;
                 </PopoverTrigger>
                 <PopoverContent align="end" side="bottom" className="w-[480px] p-3">
                   <NewInteractionForm
-                    entityId={entity.id!}
+                    selfId={entity.id!}
+                    selfName={name}
                     onCancel={() => setInteractionsPopoverOpen(false)}
                     onCreated={() => setInteractionsPopoverOpen(false)}
                   />

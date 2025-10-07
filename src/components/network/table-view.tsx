@@ -56,20 +56,23 @@ export function EntitiesTable({ rows, onOpen, onEndReached, loadingMore, selecte
   });
 
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const sentinelRef = useRef<HTMLDivElement | null>(null);
+  const hasScrolledRef = useRef(false);
   useEffect(() => {
-    if (!containerRef.current || !sentinelRef.current || !onEndReached) return;
-    const io = new IntersectionObserver((entries) => {
-      const entry = entries[0];
-      if (entry.isIntersecting) onEndReached();
-    }, { root: containerRef.current, rootMargin: "0px 0px 200px 0px", threshold: 0 });
-    io.observe(sentinelRef.current);
-    return () => io.disconnect();
+    if (!onEndReached) return;
+    function onWindowScroll() {
+      if (window.scrollY > 0) hasScrolledRef.current = true;
+      if (loadingMore) return;
+      const nearBottom = window.scrollY + window.innerHeight >= document.documentElement.scrollHeight - 24;
+      if (hasScrolledRef.current && nearBottom) onEndReached?.();
+    }
+    window.addEventListener("scroll", onWindowScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onWindowScroll);
   }, [onEndReached, rows.length, loadingMore]);
 
   return (
     <div ref={containerRef} className="rounded-lg border overflow-auto mb-8" onScroll={(e) => {
       const el = e.currentTarget;
+      if (loadingMore) return;
       if (el.scrollTop + el.clientHeight >= el.scrollHeight - 24) onEndReached?.();
     }}>
       <Table>
@@ -99,7 +102,7 @@ export function EntitiesTable({ rows, onOpen, onEndReached, loadingMore, selecte
       {loadingMore ? (
         <div className="py-3 text-center text-sm text-muted-foreground">Loading more…</div>
       ) : null}
-      <div className="h-6" ref={sentinelRef} />
+      <div className="h-6" />
     </div>
   );
 }
